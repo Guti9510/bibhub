@@ -13,8 +13,9 @@ create type laterality as enum ('left', 'right');
 create type gender as enum ('male', 'female', 'non_binary', 'prefer_not_to_say');
 
 -- ─────────────────────────────────────────────
--- organizers
+-- Tables (all created before any cross-table policies)
 -- ─────────────────────────────────────────────
+
 create table organizers (
   id          uuid primary key default uuid_generate_v4(),
   user_id     uuid not null references auth.users(id) on delete cascade,
@@ -25,17 +26,6 @@ create table organizers (
   unique (user_id)
 );
 
-alter table organizers enable row level security;
-
-create policy "organizers: own row only"
-  on organizers
-  for all
-  using  (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
-
--- ─────────────────────────────────────────────
--- races
--- ─────────────────────────────────────────────
 create table races (
   id               uuid primary key default uuid_generate_v4(),
   organizer_id     uuid not null references organizers(id) on delete cascade,
@@ -53,24 +43,6 @@ create table races (
   created_at       timestamptz not null default now()
 );
 
-alter table races enable row level security;
-
--- Organizers manage only their own races
-create policy "races: organizer full access"
-  on races
-  for all
-  using  (organizer_id in (select id from organizers where user_id = auth.uid()))
-  with check (organizer_id in (select id from organizers where user_id = auth.uid()));
-
--- Any authenticated user can read published races
-create policy "races: anyone reads published"
-  on races
-  for select
-  using (status = 'published');
-
--- ─────────────────────────────────────────────
--- athletes
--- ─────────────────────────────────────────────
 create table athletes (
   id                       uuid primary key default uuid_generate_v4(),
   user_id                  uuid not null references auth.users(id) on delete cascade,
@@ -91,31 +63,6 @@ create table athletes (
   unique (user_id)
 );
 
-alter table athletes enable row level security;
-
-create policy "athletes: own row only"
-  on athletes
-  for all
-  using  (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
-
--- Organizers can read athlete info for their race registrations
-create policy "athletes: organizer read via registration"
-  on athletes
-  for select
-  using (
-    id in (
-      select r.athlete_id
-      from   registrations r
-      join   races rc on rc.id = r.race_id
-      join   organizers o on o.id = rc.organizer_id
-      where  o.user_id = auth.uid()
-    )
-  );
-
--- ─────────────────────────────────────────────
--- registrations
--- ─────────────────────────────────────────────
 create table registrations (
   id                      uuid primary key default uuid_generate_v4(),
   race_id                 uuid not null references races(id) on delete cascade,
@@ -129,19 +76,54 @@ create table registrations (
   unique (race_id, athlete_id)
 );
 
+-- ─────────────────────────────────────────────
+-- Row Level Security
+-- ─────────────────────────────────────────────
+
+alter table organizers enable row level security;
+alter table races enable row level security;
+alter table athletes enable row level security;
 alter table registrations enable row level security;
 
--- Athletes manage only their own registrations
+create policy "organizers: own row only"
+  on organizers for all
+  using  (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "races: organizer full access"
+  on races for all
+  using  (organizer_id in (select id from organizers where user_id = auth.uid()))
+  with check (organizer_id in (select id from organizers where user_id = auth.uid()));
+
+create policy "races: anyone reads published"
+  on races for select
+  using (status = 'published');
+
+create policy "athletes: own row only"
+  on athletes for all
+  using  (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- registrations table exists now so this cross-table policy is safe
+create policy "athletes: organizer read via registration"
+  on athletes for select
+  using (
+    id in (
+      select r.athlete_id
+      from   registrations r
+      join   races rc on rc.id = r.race_id
+      join   organizers o on o.id = rc.organizer_id
+      where  o.user_id = auth.uid()
+    )
+  );
+
 create policy "registrations: athlete full access"
-  on registrations
-  for all
+  on registrations for all
   using  (athlete_id in (select id from athletes where user_id = auth.uid()))
   with check (athlete_id in (select id from athletes where user_id = auth.uid()));
 
--- Organizers can read/update registrations for their races
 create policy "registrations: organizer read"
-  on registrations
-  for select
+  on registrations for select
   using (
     race_id in (
       select rc.id
@@ -152,8 +134,7 @@ create policy "registrations: organizer read"
   );
 
 create policy "registrations: organizer update"
-  on registrations
-  for update
+  on registrations for update
   using (
     race_id in (
       select rc.id
