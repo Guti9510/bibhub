@@ -1,19 +1,20 @@
 import Link from 'next/link'
+import HeroSlideshow from './_components/HeroSlideshow'
 
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Nav */}
-      <header className="border-b border-gray-200 bg-white">
+      {/* Nav — floats over the hero */}
+      <header className="absolute inset-x-0 top-0 z-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="text-xl font-bold text-indigo-600">BibHub</span>
+          <span className="text-xl font-bold text-white drop-shadow">BibHub</span>
           <div className="flex items-center gap-4">
-            <Link href="/auth/login" className="text-sm text-gray-600 hover:text-gray-900">
+            <Link href="/auth/login" className="text-sm font-medium text-white/80 hover:text-white">
               Sign in
             </Link>
             <Link
               href="/auth/signup"
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+              className="rounded-lg bg-white/15 border border-white/30 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white hover:bg-white/25 transition-colors"
             >
               Get started
             </Link>
@@ -21,31 +22,8 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero */}
-      <main className="flex flex-1 flex-col items-center justify-center px-6 py-24 text-center">
-        <h1 className="max-w-2xl text-5xl font-bold tracking-tight text-gray-900">
-          Race registration,{' '}
-          <span className="text-indigo-600">simplified.</span>
-        </h1>
-        <p className="mt-6 max-w-xl text-lg text-gray-500">
-          BibHub connects race organizers with athletes. Publish events, manage waves, collect
-          payments, and track registrations — all in one place.
-        </p>
-        <div className="mt-10 flex gap-4">
-          <Link
-            href="/auth/signup?role=organizer"
-            className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-indigo-700"
-          >
-            I&apos;m an organizer
-          </Link>
-          <Link
-            href="/auth/signup?role=athlete"
-            className="rounded-lg border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
-          >
-            I&apos;m an athlete
-          </Link>
-        </div>
-      </main>
+      {/* Hero with slideshow */}
+      <HeroSlideshow />
 
       {/* Feature grid */}
       <section className="bg-white py-20">
