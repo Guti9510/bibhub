@@ -4,11 +4,14 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useLocale } from '@/lib/i18n/context'
+import { LanguageToggleDark } from '@/components/LanguageToggle'
 
 type Step = 'form' | 'confirm'
 
 export default function AthleteSignupPage() {
   const router = useRouter()
+  const { t } = useLocale()
   const [step, setStep] = useState<Step>('form')
 
   const [email, setEmail] = useState('')
@@ -56,17 +59,17 @@ export default function AthleteSignupPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Check your inbox</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t.common.checkYourInbox}</h2>
           <p className="mt-2 text-sm text-gray-500">
-            We sent a confirmation link to{' '}
-            <span className="font-medium text-gray-700">{email}</span>.
-            Click it to activate your account.
+            {t.common.confirmationSentTo}{' '}
+            <span className="font-medium text-gray-700">{email}</span>.{' '}
+            {t.auth.athleteSignup.confirmClickToActivate}
           </p>
           <Link
             href="/auth/login"
             className="mt-6 inline-block text-sm font-medium text-indigo-600 hover:underline"
           >
-            Back to sign in
+            {t.common.backToSignIn}
           </Link>
         </div>
       </div>
@@ -77,11 +80,11 @@ export default function AthleteSignupPage() {
     <div className="flex min-h-screen">
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-indigo-600 p-12">
-        <span className="text-2xl font-bold text-white">BibHub</span>
+        <span className="text-2xl font-bold text-white">{t.common.bibhub}</span>
         <div>
-          <h2 className="text-3xl font-bold text-white">Your next race starts here</h2>
+          <h2 className="text-3xl font-bold text-white">{t.auth.athleteSignup.panelTitle}</h2>
           <ul className="mt-6 space-y-3">
-            {benefits.map(b => (
+            {t.auth.athleteSignup.benefits.map(b => (
               <li key={b} className="flex items-center gap-3 text-sm text-indigo-100">
                 <svg className="h-5 w-5 shrink-0 text-indigo-300" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -91,28 +94,32 @@ export default function AthleteSignupPage() {
             ))}
           </ul>
         </div>
-        <p className="text-xs text-indigo-300">&copy; {new Date().getFullYear()} BibHub</p>
+        <p className="text-xs text-indigo-300">{t.common.copyright(new Date().getFullYear())}</p>
       </div>
 
       {/* Right panel */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          <div className="mb-2 lg:hidden">
-            <span className="text-xl font-bold text-indigo-600">BibHub</span>
+          <div className="mb-2 flex items-center justify-between lg:hidden">
+            <span className="text-xl font-bold text-indigo-600">{t.common.bibhub}</span>
+            <LanguageToggleDark />
+          </div>
+          <div className="mb-6 hidden lg:flex justify-end">
+            <LanguageToggleDark />
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900">Create athlete account</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t.auth.athleteSignup.title}</h1>
           <p className="mt-2 text-sm text-gray-500">
-            Already have an account?{' '}
+            {t.common.alreadyHaveAccount}{' '}
             <Link href="/auth/login" className="font-medium text-indigo-600 hover:underline">
-              Sign in
+              {t.common.signIn}
             </Link>
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                Email address
+                {t.auth.login.emailAddress}
               </label>
               <input
                 type="email"
@@ -120,14 +127,14 @@ export default function AthleteSignupPage() {
                 autoComplete="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t.auth.athleteSignup.emailPlaceholder}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                Password
+                {t.common.password}
               </label>
               <input
                 type="password"
@@ -136,7 +143,7 @@ export default function AthleteSignupPage() {
                 autoComplete="new-password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="At least 8 characters"
+                placeholder={t.auth.athleteSignup.passwordPlaceholder}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
@@ -152,13 +159,13 @@ export default function AthleteSignupPage() {
               disabled={loading}
               className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Creating account…' : 'Create account'}
+              {loading ? t.common.creatingAccount : t.common.createAccount}
             </button>
 
             <p className="text-center text-xs text-gray-400">
-              Looking to organize races?{' '}
+              {t.auth.athleteSignup.lookingToOrganize}{' '}
               <Link href="/auth/signup" className="font-medium text-indigo-600 hover:underline">
-                Create an organizer account
+                {t.auth.athleteSignup.createOrganizerAccount}
               </Link>
             </p>
           </form>
@@ -167,11 +174,3 @@ export default function AthleteSignupPage() {
     </div>
   )
 }
-
-const benefits = [
-  'Browse and register for races in seconds',
-  'Your profile pre-fills registration forms',
-  'Track all your upcoming and past races',
-  'Manage wave, shirt size, and finish time',
-  'Emergency contact stored securely on file',
-]

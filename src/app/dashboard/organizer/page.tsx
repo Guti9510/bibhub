@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { getLocale } from '@/lib/i18n/server'
+import { getT } from '@/lib/i18n'
 
 export default async function OrganizerDashboard() {
   const supabase = await createClient()
@@ -15,6 +17,10 @@ export default async function OrganizerDashboard() {
 
   if (!organizer) redirect('/auth/login')
 
+  const locale = await getLocale()
+  const t = getT(locale)
+  const td = t.organizerDashboard
+
   // Fetch all races for this organizer
   const { data: races } = await supabase
     .from('races')
@@ -24,7 +30,6 @@ export default async function OrganizerDashboard() {
 
   const raceIds = races?.map(r => r.id) ?? []
 
-  // Fetch registrations for those races (two columns only — fast)
   let registrations: { race_id: string; payment_status: string }[] = []
   if (raceIds.length > 0) {
     const { data } = await supabase
@@ -34,7 +39,6 @@ export default async function OrganizerDashboard() {
     registrations = data ?? []
   }
 
-  // Build per-race stats
   const statsByRace = new Map<string, { total: number; paid: number }>()
   for (const reg of registrations) {
     const s = statsByRace.get(reg.race_id) ?? { total: 0, paid: 0 }
@@ -43,7 +47,6 @@ export default async function OrganizerDashboard() {
     statsByRace.set(reg.race_id, s)
   }
 
-  // Aggregate stats
   const totalRegistrations = registrations.length
   const totalRevenue = (races ?? []).reduce((sum, race) => {
     const s = statsByRace.get(race.id)
@@ -53,16 +56,17 @@ export default async function OrganizerDashboard() {
   const draftCount = (races ?? []).filter(r => r.status === 'draft').length
 
   const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+  const dateFmt = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString(locale === 'es' ? 'es-CR' : 'en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+    })
 
   return (
     <div className="p-8">
       {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Welcome back, {organizer.name}
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">{td.welcomeBack(organizer.name)}</h1>
         </div>
         <Link
           href="/dashboard/organizer/races/new"
@@ -71,37 +75,37 @@ export default async function OrganizerDashboard() {
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-          New Race
+          {td.newRace}
         </Link>
       </div>
 
       {/* Stat cards */}
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          label="Total races"
+          label={td.totalRaces}
           value={String(races?.length ?? 0)}
-          sub={`${publishedCount} published · ${draftCount} draft`}
+          sub={`${publishedCount} ${td.published} · ${draftCount} ${td.draft}`}
           icon={<RaceIcon />}
           color="indigo"
         />
         <StatCard
-          label="Total registrations"
+          label={td.totalRegistrations}
           value={String(totalRegistrations)}
-          sub="across all events"
+          sub={td.acrossAllEvents}
           icon={<PeopleIcon />}
           color="violet"
         />
         <StatCard
-          label="Total revenue"
+          label={td.totalRevenue}
           value={fmt.format(totalRevenue)}
-          sub="from paid registrations"
+          sub={td.fromPaidRegistrations}
           icon={<RevenueIcon />}
           color="emerald"
         />
         <StatCard
-          label="Published races"
+          label={td.publishedRaces}
           value={String(publishedCount)}
-          sub={`${draftCount} still in draft`}
+          sub={td.stillInDraft(draftCount)}
           icon={<CheckIcon />}
           color="sky"
         />
@@ -110,29 +114,29 @@ export default async function OrganizerDashboard() {
       {/* Race table */}
       <div className="rounded-xl border border-gray-200 bg-white">
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="font-semibold text-gray-900">Your races</h2>
+          <h2 className="font-semibold text-gray-900">{td.yourRaces}</h2>
           {races && races.length > 0 && (
             <Link
               href="/dashboard/organizer/races"
               className="text-sm font-medium text-indigo-600 hover:underline"
             >
-              View all
+              {td.viewAll}
             </Link>
           )}
         </div>
 
         {!races?.length ? (
-          <EmptyRaces />
+          <EmptyRaces label={td.noRacesYet} desc={td.createFirstRace} cta={td.createARace} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-left">
-                  <th className="px-6 py-3 text-xs font-medium uppercase tracking-wide text-gray-400">Race</th>
-                  <th className="px-6 py-3 text-xs font-medium uppercase tracking-wide text-gray-400">Date</th>
-                  <th className="px-6 py-3 text-xs font-medium uppercase tracking-wide text-gray-400">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-400">Registrations</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-400">Revenue</th>
+                  <th className="px-6 py-3 text-xs font-medium uppercase tracking-wide text-gray-400">{td.race}</th>
+                  <th className="px-6 py-3 text-xs font-medium uppercase tracking-wide text-gray-400">{td.race === 'Race' ? 'Date' : 'Fecha'}</th>
+                  <th className="px-6 py-3 text-xs font-medium uppercase tracking-wide text-gray-400">{td.status}</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-400">{td.registrations}</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-400">{td.revenue}</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
@@ -162,13 +166,9 @@ export default async function OrganizerDashboard() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-500">
-                        {new Date(race.date).toLocaleDateString('en-US', {
-                          month: 'short', day: 'numeric', year: 'numeric',
-                        })}
-                      </td>
+                      <td className="px-6 py-4 text-gray-500">{dateFmt(race.date)}</td>
                       <td className="px-6 py-4">
-                        <StatusBadge status={race.status} />
+                        <StatusBadge status={race.status} label={td.statusLabels[race.status as keyof typeof td.statusLabels] ?? race.status} />
                       </td>
                       <td className="px-6 py-4 text-right">
                         <span className="font-semibold text-gray-900">{stats.total}</span>
@@ -192,7 +192,7 @@ export default async function OrganizerDashboard() {
                           href={`/dashboard/organizer/races/${race.id}`}
                           className="text-xs font-medium text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-indigo-600"
                         >
-                          Manage →
+                          {td.manage}
                         </Link>
                       </td>
                     </tr>
@@ -236,7 +236,7 @@ function StatCard({
   )
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, label }: { status: string; label: string }) {
   const styles: Record<string, string> = {
     draft: 'bg-gray-100 text-gray-600',
     published: 'bg-green-100 text-green-700',
@@ -247,19 +247,19 @@ function StatusBadge({ status }: { status: string }) {
       {status === 'published' && (
         <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-green-500" />
       )}
-      {status}
+      {label}
     </span>
   )
 }
 
-function EmptyRaces() {
+function EmptyRaces({ label, desc, cta }: { label: string; desc: string; cta: string }) {
   return (
     <div className="flex flex-col items-center px-6 py-16 text-center">
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50">
         <RaceIcon />
       </div>
-      <p className="font-medium text-gray-900">No races yet</p>
-      <p className="mt-1 text-sm text-gray-400">Create your first race to start collecting registrations.</p>
+      <p className="font-medium text-gray-900">{label}</p>
+      <p className="mt-1 text-sm text-gray-400">{desc}</p>
       <Link
         href="/dashboard/organizer/races/new"
         className="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
@@ -267,7 +267,7 @@ function EmptyRaces() {
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
         </svg>
-        Create a race
+        {cta}
       </Link>
     </div>
   )

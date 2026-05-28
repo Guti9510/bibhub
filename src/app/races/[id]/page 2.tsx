@@ -1,20 +1,11 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { getLocale } from '@/lib/i18n/server'
-import { getT } from '@/lib/i18n'
-import { LanguageToggleDark } from '@/components/LanguageToggle'
 
-const SPORT_COLORS: Record<string, string> = {
-  running:  'bg-orange-50 text-orange-700 border-orange-200',
-  cycling:  'bg-blue-50 text-blue-700 border-blue-200',
-  swimming: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-}
-
-const SPORT_EMOJI: Record<string, string> = {
-  running: '🏃',
-  cycling: '🚴',
-  swimming: '🏊',
+const SPORT_META: Record<string, { emoji: string; label: string; color: string }> = {
+  running:  { emoji: '🏃', label: 'Running',  color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  cycling:  { emoji: '🚴', label: 'Cycling',  color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  swimming: { emoji: '🏊', label: 'Swimming', color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
 }
 
 type Params = Promise<{ id: string }>
@@ -22,9 +13,6 @@ type Params = Promise<{ id: string }>
 export default async function RaceDetailPage({ params }: { params: Params }) {
   const { id } = await params
   const supabase = await createClient()
-  const locale = await getLocale()
-  const t = getT(locale)
-  const tr = t.races
 
   const { data: race } = await supabase
     .from('races')
@@ -35,40 +23,22 @@ export default async function RaceDetailPage({ params }: { params: Params }) {
 
   if (!race) notFound()
 
-  const color = SPORT_COLORS[race.sport_type] ?? SPORT_COLORS.running
-  const emoji = SPORT_EMOJI[race.sport_type] ?? '🏃'
+  const meta = SPORT_META[race.sport_type] ?? SPORT_META.running
   const raceDate = new Date(race.date)
   const organizer = race.organizers as unknown as { name: string; email: string } | null
   const waveOptions = race.wave_options as string[]
   const shirtSizes = race.shirt_sizes as string[]
   const isFree = Number(race.price) === 0
 
-  const sportLabel = (s: string) => {
-    if (locale === 'es') {
-      return { running: 'Running', cycling: 'Ciclismo', swimming: 'Natación' }[s] ?? s
-    }
-    return { running: 'Running', cycling: 'Cycling', swimming: 'Swimming' }[s] ?? s
-  }
-
-  const dateLong = raceDate.toLocaleDateString(locale === 'es' ? 'es-CR' : 'en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-  })
-  const timeStr = raceDate.toLocaleTimeString(locale === 'es' ? 'es-CR' : 'en-US', {
-    hour: 'numeric', minute: '2-digit',
-  })
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-bold text-indigo-600">{t.common.bibhub}</Link>
-          <div className="flex items-center gap-4">
-            <LanguageToggleDark />
-            <Link href="/races" className="text-sm text-gray-500 hover:text-gray-900">
-              {tr.allRaces}
-            </Link>
-          </div>
+          <Link href="/" className="text-lg font-bold text-indigo-600">BibHub</Link>
+          <Link href="/races" className="text-sm text-gray-500 hover:text-gray-900">
+            ← All races
+          </Link>
         </div>
       </header>
 
@@ -80,32 +50,48 @@ export default async function RaceDetailPage({ params }: { params: Params }) {
 
             {/* Title */}
             <div>
-              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${color}`}>
-                {emoji} {sportLabel(race.sport_type)}
+              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${meta.color}`}>
+                {meta.emoji} {meta.label}
               </span>
               <h1 className="mt-3 text-3xl font-bold text-gray-900">{race.name}</h1>
               {organizer && (
                 <p className="mt-1 text-sm text-gray-500">
-                  {tr.organizedBy} <span className="font-medium text-gray-700">{organizer.name}</span>
+                  Organized by <span className="font-medium text-gray-700">{organizer.name}</span>
                 </p>
               )}
             </div>
 
             {/* Key details */}
             <div className="rounded-2xl border border-gray-200 bg-white p-6">
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">{tr.raceDetails}</h2>
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">Race details</h2>
               <dl className="space-y-4">
-                <DetailRow icon={<CalendarIcon />} label={tr.date} value={dateLong} />
-                <DetailRow icon={<ClockIcon />} label={tr.startTime} value={timeStr} />
-                <DetailRow icon={<LocationIcon />} label={tr.location} value={race.location} />
-                <DetailRow icon={<DistanceIcon />} label={tr.distance} value={`${race.distance} km`} />
+                <DetailRow
+                  icon={<CalendarIcon />}
+                  label="Date"
+                  value={raceDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                />
+                <DetailRow
+                  icon={<ClockIcon />}
+                  label="Start time"
+                  value={raceDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                />
+                <DetailRow
+                  icon={<LocationIcon />}
+                  label="Location"
+                  value={race.location}
+                />
+                <DetailRow
+                  icon={<DistanceIcon />}
+                  label="Distance"
+                  value={`${race.distance} km`}
+                />
               </dl>
             </div>
 
             {/* Waves */}
             {race.has_waves && waveOptions.length > 0 && (
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
-                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">{tr.startWavesTitle}</h2>
+                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">Start waves</h2>
                 <div className="flex flex-wrap gap-2">
                   {waveOptions.map((wave, i) => (
                     <span key={wave} className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700">
@@ -123,7 +109,7 @@ export default async function RaceDetailPage({ params }: { params: Params }) {
             {shirtSizes.length > 0 && (
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">
-                  {tr.shirtSizesAvailable}
+                  Shirt sizes available
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {shirtSizes.map(size => (
@@ -141,15 +127,15 @@ export default async function RaceDetailPage({ params }: { params: Params }) {
             <div className="sticky top-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="mb-4 text-center">
                 <p className="text-3xl font-bold text-gray-900">
-                  {isFree ? t.common.free : `$${Number(race.price).toFixed(2)}`}
+                  {isFree ? 'Free' : `$${Number(race.price).toFixed(2)}`}
                 </p>
-                <p className="mt-1 text-sm text-gray-400">{tr.perRegistration}</p>
+                <p className="mt-1 text-sm text-gray-400">per registration</p>
               </div>
 
               {race.max_participants && (
                 <div className="mb-4 rounded-lg bg-gray-50 px-4 py-3 text-center">
                   <p className="text-lg font-bold text-gray-900">{race.max_participants}</p>
-                  <p className="text-xs text-gray-400">{tr.maximumParticipants}</p>
+                  <p className="text-xs text-gray-400">maximum participants</p>
                 </div>
               )}
 
@@ -157,26 +143,26 @@ export default async function RaceDetailPage({ params }: { params: Params }) {
                 {waveOptions.length > 0 && (
                   <p className="flex items-center gap-2 text-gray-600">
                     <span className="text-indigo-500">✓</span>
-                    {waveOptions.length} {waveOptions.length === 1 ? tr.startWave : tr.startWaves}
+                    {waveOptions.length} start {waveOptions.length === 1 ? 'wave' : 'waves'}
                   </p>
                 )}
                 {shirtSizes.length > 0 && (
                   <p className="flex items-center gap-2 text-gray-600">
                     <span className="text-indigo-500">✓</span>
-                    {tr.shirtSizeSelection}
+                    Shirt size selection
                   </p>
                 )}
               </div>
 
-              <Link
-                href={`/races/${race.id}/register`}
-                className="mt-6 block w-full rounded-xl bg-indigo-600 py-3 text-center text-sm font-bold text-white shadow hover:bg-indigo-700 transition-colors"
+              {/* Registration button — placeholder until registration form is built */}
+              <button
+                className="mt-6 w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow hover:bg-indigo-700 transition-colors"
               >
-                {tr.registerNow}
-              </Link>
+                Register now
+              </button>
 
               <p className="mt-3 text-center text-xs text-gray-400">
-                {tr.registrationManagedBy}
+                Registration managed by BibHub
               </p>
             </div>
           </div>

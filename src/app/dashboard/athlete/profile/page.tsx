@@ -5,17 +5,21 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Gender, Laterality, SportType } from '@/types/database'
-
-const SPORTS: { value: SportType; emoji: string; label: string }[] = [
-  { value: 'running', emoji: '🏃', label: 'Running' },
-  { value: 'cycling', emoji: '🚴', label: 'Cycling' },
-  { value: 'swimming', emoji: '🏊', label: 'Swimming' },
-]
+import { useLocale } from '@/lib/i18n/context'
 
 const inp = 'w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500'
 
 export default function AthleteProfilePage() {
   const router = useRouter()
+  const { t } = useLocale()
+  const tp = t.athleteProfile
+
+  const SPORTS: { value: SportType; emoji: string; label: string }[] = [
+    { value: 'running', emoji: '🏃', label: tp.sports.running },
+    { value: 'cycling', emoji: '🚴', label: tp.sports.cycling },
+    { value: 'swimming', emoji: '🏊', label: tp.sports.swimming },
+  ]
+
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [saved, setSaved] = useState(false)
@@ -135,24 +139,22 @@ export default function AthleteProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl pb-24">
+    <div className="mx-auto max-w-2xl pb-24 px-6 py-8">
       {/* Header */}
       <div className="mb-8">
         <Link href="/dashboard/athlete" className="text-sm text-gray-400 hover:text-gray-600">
-          ← Dashboard
+          {tp.backToDashboard}
         </Link>
-        <h1 className="mt-3 text-2xl font-bold text-gray-900">Athlete profile</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Your profile is pre-filled when you register for a race.
-        </p>
+        <h1 className="mt-3 text-2xl font-bold text-gray-900">{tp.title}</h1>
+        <p className="mt-1 text-sm text-gray-500">{tp.subtitle}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* Personal info */}
-        <Card title="Personal info">
+        <Card title={tp.personalInfo}>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="First name">
+            <Field label={tp.firstName}>
               <input
                 required
                 value={form.first_name}
@@ -161,7 +163,7 @@ export default function AthleteProfilePage() {
                 className={inp}
               />
             </Field>
-            <Field label="Last name">
+            <Field label={tp.lastName}>
               <input
                 required
                 value={form.last_name}
@@ -172,7 +174,7 @@ export default function AthleteProfilePage() {
             </Field>
           </div>
 
-          <Field label="Email">
+          <Field label={t.common.email}>
             <input
               type="email"
               required
@@ -183,7 +185,7 @@ export default function AthleteProfilePage() {
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Phone" optional>
+            <Field label={tp.phone} optional>
               <input
                 type="tel"
                 value={form.phone}
@@ -192,7 +194,7 @@ export default function AthleteProfilePage() {
                 className={inp}
               />
             </Field>
-            <Field label="Date of birth">
+            <Field label={tp.dateOfBirth}>
               <input
                 type="date"
                 required
@@ -204,7 +206,7 @@ export default function AthleteProfilePage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Nationality" optional>
+            <Field label={tp.nationality} optional>
               <input
                 value={form.nationality}
                 onChange={e => set('nationality', e.target.value)}
@@ -212,24 +214,24 @@ export default function AthleteProfilePage() {
                 className={inp}
               />
             </Field>
-            <Field label="Gender" optional>
+            <Field label={tp.gender} optional>
               <select
                 value={form.gender}
                 onChange={e => set('gender', e.target.value as Gender | '')}
                 className={inp}
               >
-                <option value="">Prefer not to say</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="non_binary">Non-binary</option>
+                <option value="">{tp.genderOptions.preferNotToSay}</option>
+                <option value="male">{tp.genderOptions.male}</option>
+                <option value="female">{tp.genderOptions.female}</option>
+                <option value="non_binary">{tp.genderOptions.nonBinary}</option>
               </select>
             </Field>
           </div>
         </Card>
 
         {/* Sports & laterality */}
-        <Card title="Sports & laterality">
-          <Field label="I compete in">
+        <Card title={tp.sportsLaterality}>
+          <Field label={tp.iCompeteIn}>
             <div className="flex gap-3">
               {SPORTS.map(({ value, emoji, label }) => (
                 <button
@@ -249,11 +251,11 @@ export default function AthleteProfilePage() {
             </div>
           </Field>
 
-          <Field label="Dominant side" optional>
+          <Field label={tp.dominantSide} optional>
             <div className="flex gap-3">
               {[
-                { value: 'left' as Laterality, label: 'Left' },
-                { value: 'right' as Laterality, label: 'Right' },
+                { value: 'left' as Laterality, label: tp.left },
+                { value: 'right' as Laterality, label: tp.right },
               ].map(opt => (
                 <button
                   key={opt.value}
@@ -277,19 +279,17 @@ export default function AthleteProfilePage() {
                     : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
                 }`}
               >
-                Unknown
+                {tp.unknown}
               </button>
             </div>
           </Field>
         </Card>
 
         {/* Emergency contact */}
-        <Card title="Emergency contact">
-          <p className="text-sm text-gray-500">
-            Required by most races in case of a medical emergency.
-          </p>
+        <Card title={tp.emergencyContact}>
+          <p className="text-sm text-gray-500">{tp.emergencyContactDesc}</p>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Name" optional>
+            <Field label={t.common.name} optional>
               <input
                 value={form.emergency_contact_name}
                 onChange={e => set('emergency_contact_name', e.target.value)}
@@ -297,7 +297,7 @@ export default function AthleteProfilePage() {
                 className={inp}
               />
             </Field>
-            <Field label="Phone" optional>
+            <Field label={tp.phone} optional>
               <input
                 type="tel"
                 value={form.emergency_contact_phone}
@@ -310,12 +310,10 @@ export default function AthleteProfilePage() {
         </Card>
 
         {/* Beneficiary */}
-        <Card title="Beneficiary">
-          <p className="text-sm text-gray-500">
-            Person designated to receive race-related benefits if applicable.
-          </p>
+        <Card title={tp.beneficiary}>
+          <p className="text-sm text-gray-500">{tp.beneficiaryDesc}</p>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Name" optional>
+            <Field label={t.common.name} optional>
               <input
                 value={form.beneficiary_name}
                 onChange={e => set('beneficiary_name', e.target.value)}
@@ -323,7 +321,7 @@ export default function AthleteProfilePage() {
                 className={inp}
               />
             </Field>
-            <Field label="Relationship" optional>
+            <Field label={tp.relationship} optional>
               <input
                 value={form.beneficiary_relationship}
                 onChange={e => set('beneficiary_relationship', e.target.value)}
@@ -343,7 +341,7 @@ export default function AthleteProfilePage() {
                 <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
-                Profile saved
+                {tp.profileSaved}
               </p>
             )}
             {!error && !saved && <span />}
@@ -352,7 +350,7 @@ export default function AthleteProfilePage() {
               disabled={loading}
               className="rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow hover:bg-indigo-700 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Saving…' : 'Save profile'}
+              {loading ? t.common.saving : tp.saveProfile}
             </button>
           </div>
         </div>
@@ -372,11 +370,12 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 }
 
 function Field({ label, optional, children }: { label: string; optional?: boolean; children: React.ReactNode }) {
+  const { t } = useLocale()
   return (
     <div>
       <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-gray-700">
         {label}
-        {optional && <span className="text-xs font-normal text-gray-400">optional</span>}
+        {optional && <span className="text-xs font-normal text-gray-400">{t.common.optional}</span>}
       </label>
       {children}
     </div>

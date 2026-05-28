@@ -1,10 +1,19 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { getLocale } from '@/lib/i18n/server'
+import { getT } from '@/lib/i18n'
+import { LanguageToggleDark } from '@/components/LanguageToggle'
 
-const SPORT_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
-  running:  { label: 'Running',  emoji: '🏃', color: 'bg-orange-50 text-orange-700 border-orange-200' },
-  cycling:  { label: 'Cycling',  emoji: '🚴', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  swimming: { label: 'Swimming', emoji: '🏊', color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+const SPORT_COLORS: Record<string, string> = {
+  running:  'bg-orange-50 text-orange-700 border-orange-200',
+  cycling:  'bg-blue-50 text-blue-700 border-blue-200',
+  swimming: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+}
+
+const SPORT_EMOJI: Record<string, string> = {
+  running: '🏃',
+  cycling: '🚴',
+  swimming: '🏊',
 }
 
 type SearchParams = Promise<{ sport?: string; q?: string }>
@@ -12,6 +21,9 @@ type SearchParams = Promise<{ sport?: string; q?: string }>
 export default async function PublicRacesPage({ searchParams }: { searchParams: SearchParams }) {
   const { sport, q } = await searchParams
   const supabase = await createClient()
+  const locale = await getLocale()
+  const t = getT(locale)
+  const tr = t.races
 
   let query = supabase
     .from('races')
@@ -28,21 +40,40 @@ export default async function PublicRacesPage({ searchParams }: { searchParams: 
 
   const { data: races } = await query
 
+  const dateFmt = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString(locale === 'es' ? 'es-CR' : 'en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+    })
+
+  const timeFmt = (dateStr: string) =>
+    new Date(dateStr).toLocaleTimeString(locale === 'es' ? 'es-CR' : 'en-US', {
+      hour: 'numeric', minute: '2-digit',
+    })
+
+  // Sport labels by locale
+  const sportLabel = (s: string) => {
+    if (locale === 'es') {
+      return { running: 'Running', cycling: 'Ciclismo', swimming: 'Natación' }[s] ?? s
+    }
+    return { running: 'Running', cycling: 'Cycling', swimming: 'Swimming' }[s] ?? s
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-bold text-indigo-600">BibHub</Link>
+          <Link href="/" className="text-lg font-bold text-indigo-600">{t.common.bibhub}</Link>
           <div className="flex items-center gap-4">
+            <LanguageToggleDark />
             <Link href="/auth/login" className="text-sm font-medium text-gray-500 hover:text-gray-900">
-              Sign in
+              {t.common.signIn}
             </Link>
             <Link
               href="/auth/signup"
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
             >
-              For organizers
+              {tr.forOrganizers}
             </Link>
           </div>
         </div>
@@ -51,39 +82,35 @@ export default async function PublicRacesPage({ searchParams }: { searchParams: 
       <div className="mx-auto max-w-6xl px-6 py-10">
         {/* Page title */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Upcoming Races</h1>
-          <p className="mt-2 text-gray-500">Find your next challenge and register in minutes.</p>
+          <h1 className="text-3xl font-bold text-gray-900">{tr.upcomingRaces}</h1>
+          <p className="mt-2 text-gray-500">{tr.findYourNextChallenge}</p>
         </div>
 
         {/* Filters */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          <SportFilter active={sport} />
+          <SportFilter active={sport} t={tr} />
         </div>
 
         {/* Race grid */}
         {!races?.length ? (
-          <EmptyState sport={sport} />
+          <EmptyState sport={sport} t={tr} />
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {races.map(race => {
-              const meta = SPORT_LABELS[race.sport_type] ?? SPORT_LABELS.running
-              const raceDate = new Date(race.date)
+              const color = SPORT_COLORS[race.sport_type] ?? SPORT_COLORS.running
+              const emoji = SPORT_EMOJI[race.sport_type] ?? '🏃'
               const organizer = race.organizers as unknown as { name: string } | null
 
               return (
                 <Link key={race.id} href={`/races/${race.id}`} className="group">
                   <article className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-indigo-300 hover:shadow-md">
-                    {/* Sport + date row */}
                     <div className="mb-4 flex items-center justify-between">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${meta.color}`}>
-                        {meta.emoji} {meta.label}
+                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${color}`}>
+                        {emoji} {sportLabel(race.sport_type)}
                       </span>
-                      <span className="text-xs font-medium text-gray-400">
-                        {raceDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span>
+                      <span className="text-xs font-medium text-gray-400">{dateFmt(race.date)}</span>
                     </div>
 
-                    {/* Name + location */}
                     <h2 className="text-base font-bold text-gray-900 group-hover:text-indigo-700 transition-colors">
                       {race.name}
                     </h2>
@@ -95,32 +122,28 @@ export default async function PublicRacesPage({ searchParams }: { searchParams: 
                       {race.location}
                     </p>
 
-                    {/* Distance + time */}
                     <p className="mt-1 text-sm text-gray-400">
-                      {race.distance} km &middot;{' '}
-                      {raceDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      {race.distance} km &middot; {timeFmt(race.date)}
                     </p>
 
-                    {/* Spacer */}
                     <div className="flex-1" />
 
-                    {/* Footer row */}
                     <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
                       <span className="text-sm font-bold text-gray-900">
-                        {Number(race.price) === 0 ? 'Free' : `$${Number(race.price).toFixed(0)}`}
+                        {Number(race.price) === 0 ? t.common.free : `$${Number(race.price).toFixed(0)}`}
                       </span>
                       {race.max_participants && (
                         <span className="text-xs text-gray-400">
-                          {race.max_participants} spots
+                          {race.max_participants} {tr.spots}
                         </span>
                       )}
                       <span className="text-xs font-semibold text-indigo-600 group-hover:underline">
-                        View race →
+                        {tr.viewRace}
                       </span>
                     </div>
 
                     {organizer && (
-                      <p className="mt-2 text-xs text-gray-400">by {organizer.name}</p>
+                      <p className="mt-2 text-xs text-gray-400">{tr.by} {organizer.name}</p>
                     )}
                   </article>
                 </Link>
@@ -135,9 +158,9 @@ export default async function PublicRacesPage({ searchParams }: { searchParams: 
 
 // ─── Sport filter tabs ──────────────────────────────────────────────────────────
 
-function SportFilter({ active }: { active?: string }) {
+function SportFilter({ active, t }: { active?: string; t: ReturnType<typeof getT>['races'] }) {
   const tabs = [
-    { value: undefined, label: 'All sports' },
+    { value: undefined, label: t.allSports },
     { value: 'running', label: '🏃 Running' },
     { value: 'cycling', label: '🚴 Cycling' },
     { value: 'swimming', label: '🏊 Swimming' },
@@ -161,19 +184,17 @@ function SportFilter({ active }: { active?: string }) {
   )
 }
 
-function EmptyState({ sport }: { sport?: string }) {
+function EmptyState({ sport, t }: { sport?: string; t: ReturnType<typeof getT>['races'] }) {
   return (
     <div className="flex flex-col items-center py-24 text-center">
       <p className="text-4xl">🏁</p>
-      <p className="mt-4 text-lg font-semibold text-gray-900">No races found</p>
+      <p className="mt-4 text-lg font-semibold text-gray-900">{t.noRacesFound}</p>
       <p className="mt-2 text-sm text-gray-400">
-        {sport
-          ? `No published ${sport} races at the moment.`
-          : 'No races are published yet. Check back soon!'}
+        {sport ? t.noSportRaces(sport) : t.noPublishedRaces}
       </p>
       {sport && (
         <Link href="/races" className="mt-4 text-sm font-medium text-indigo-600 hover:underline">
-          View all sports
+          {t.viewAllSports}
         </Link>
       )}
     </div>

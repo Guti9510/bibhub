@@ -4,24 +4,22 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { useLocale } from '@/lib/i18n/context'
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 const WAVE_PRESETS = ['Elite', 'Wave A', 'Wave B', 'Wave C', 'Wave D', 'Open']
 
-const SPORTS = [
-  { value: 'running', label: 'Running', emoji: '🏃', desc: 'Road, trail, track' },
-  { value: 'cycling', label: 'Cycling', emoji: '🚴', desc: 'Road, MTB, gravel' },
-  { value: 'swimming', label: 'Swimming', emoji: '🏊', desc: 'Open water, pool' },
-] as const
-
-type SportValue = typeof SPORTS[number]['value']
+type SportValue = 'running' | 'cycling' | 'swimming'
 
 // ─── Page ───────────────────────────────────────────────────────────────────────
 
 export default function NewRacePage() {
   const router = useRouter()
+  const { t } = useLocale()
+  const tn = t.newRace
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [waveInput, setWaveInput] = useState('')
@@ -76,11 +74,11 @@ export default function NewRacePage() {
 
   async function submit(status: 'draft' | 'published') {
     if (!form.name.trim() || !form.date || !form.location.trim() || !form.distance || !form.max_participants) {
-      setError('Please fill in all required fields.')
+      setError(tn.fillAllRequired)
       return
     }
     if (form.has_shirt_sizes && form.shirt_sizes.length === 0) {
-      setError('Select at least one shirt size, or disable the shirt sizes option.')
+      setError(tn.selectShirtSizeOrDisable)
       return
     }
 
@@ -95,7 +93,6 @@ export default function NewRacePage() {
       .eq('user_id', user!.id)
       .single()
 
-    // Combine date + time into an ISO string the DB accepts as timestamptz
     const datetime = `${form.date}T${form.time || '00:00'}:00`
 
     const { error: insertError } = await supabase.from('races').insert({
@@ -126,27 +123,26 @@ export default function NewRacePage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    // Extra bottom padding so content isn't hidden behind the sticky footer
     <div className="pb-24">
       {/* Breadcrumb header */}
       <div className="border-b border-gray-200 bg-white px-8 py-4">
         <nav className="flex items-center gap-2 text-sm">
-          <Link href="/dashboard/organizer" className="text-gray-400 hover:text-gray-600">Dashboard</Link>
+          <Link href="/dashboard/organizer" className="text-gray-400 hover:text-gray-600">{tn.breadcrumb.dashboard}</Link>
           <span className="text-gray-300">/</span>
-          <Link href="/dashboard/organizer/races" className="text-gray-400 hover:text-gray-600">Races</Link>
+          <Link href="/dashboard/organizer/races" className="text-gray-400 hover:text-gray-600">{tn.breadcrumb.races}</Link>
           <span className="text-gray-300">/</span>
-          <span className="font-medium text-gray-700">New race</span>
+          <span className="font-medium text-gray-700">{tn.breadcrumb.newRace}</span>
         </nav>
       </div>
 
       <div className="mx-auto max-w-2xl space-y-5 px-8 py-8">
         {/* ── Section 1: Race details ── */}
-        <Card title="Race details" desc="Basic information about your event">
-          <Field label="Race name" required>
+        <Card title={tn.raceDetails} desc={tn.raceDetailsDesc}>
+          <Field label={tn.raceName} required>
             <input
               type="text"
               required
-              placeholder="e.g. San José Trail Half Marathon"
+              placeholder={tn.raceNamePlaceholder}
               value={form.name}
               onChange={e => set('name', e.target.value)}
               className={inp}
@@ -154,7 +150,7 @@ export default function NewRacePage() {
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Date" required>
+            <Field label={tn.date} required>
               <input
                 type="date"
                 required
@@ -163,7 +159,7 @@ export default function NewRacePage() {
                 className={inp}
               />
             </Field>
-            <Field label="Start time" required>
+            <Field label={tn.startTime} required>
               <input
                 type="time"
                 required
@@ -174,31 +170,33 @@ export default function NewRacePage() {
             </Field>
           </div>
 
-          <Field label="Location" required>
+          <Field label={tn.location} required>
             <input
               type="text"
               required
-              placeholder="e.g. Parque La Sabana, San José"
+              placeholder={tn.locationPlaceholder}
               value={form.location}
               onChange={e => set('location', e.target.value)}
               className={inp}
             />
           </Field>
 
-          <Field label="Sport type" required>
+          <Field label={tn.sportType} required>
             <div className="grid grid-cols-3 gap-3">
-              {SPORTS.map(sport => (
+              {tn.sports.map(sport => (
                 <button
                   key={sport.value}
                   type="button"
-                  onClick={() => set('sport_type', sport.value)}
+                  onClick={() => set('sport_type', sport.value as SportValue)}
                   className={`flex flex-col items-center rounded-xl border-2 px-4 py-3 text-center transition-all ${
                     form.sport_type === sport.value
                       ? 'border-indigo-500 bg-indigo-50'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                 >
-                  <span className="text-2xl leading-none">{sport.emoji}</span>
+                  <span className="text-2xl leading-none">
+                    {sport.value === 'running' ? '🏃' : sport.value === 'cycling' ? '🚴' : '🏊'}
+                  </span>
                   <span className={`mt-1.5 text-sm font-semibold ${
                     form.sport_type === sport.value ? 'text-indigo-700' : 'text-gray-700'
                   }`}>
@@ -212,9 +210,9 @@ export default function NewRacePage() {
         </Card>
 
         {/* ── Section 2: Registration ── */}
-        <Card title="Registration" desc="Capacity and pricing for this event">
+        <Card title={tn.registration} desc={tn.registrationDesc}>
           <div className="grid grid-cols-3 gap-4">
-            <Field label="Distance (km)" required>
+            <Field label={tn.distanceKm} required>
               <input
                 type="number"
                 min="0"
@@ -226,7 +224,7 @@ export default function NewRacePage() {
                 className={inp}
               />
             </Field>
-            <Field label="Price (USD)">
+            <Field label={tn.priceUsd}>
               <div className="relative">
                 <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-gray-400">$</span>
                 <input
@@ -240,7 +238,7 @@ export default function NewRacePage() {
                 />
               </div>
             </Field>
-            <Field label="Max participants" required>
+            <Field label={tn.maxParticipants} required>
               <input
                 type="number"
                 min="1"
@@ -257,21 +255,20 @@ export default function NewRacePage() {
 
         {/* ── Section 3: Start waves ── */}
         <Card
-          title="Start waves"
-          desc="Divide athletes into time-separated corrals"
+          title={tn.startWaves}
+          desc={tn.startWavesDesc}
           toggle={
             <Toggle
               checked={form.has_waves}
               onChange={v => set('has_waves', v)}
-              label={form.has_waves ? 'Enabled' : 'Disabled'}
+              label={form.has_waves ? tn.enabled : tn.disabled}
             />
           }
         >
           {form.has_waves && (
             <div className="space-y-4">
-              {/* Preset chips */}
               <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">Quick add</p>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{tn.quickAdd}</p>
                 <div className="flex flex-wrap gap-2">
                   {WAVE_PRESETS.map(preset => {
                     const active = form.wave_options.includes(preset)
@@ -293,9 +290,8 @@ export default function NewRacePage() {
                 </div>
               </div>
 
-              {/* Custom wave input */}
               <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">Custom name</p>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{tn.customName}</p>
                 <div className="flex gap-2">
                   <input
                     value={waveInput}
@@ -303,7 +299,7 @@ export default function NewRacePage() {
                     onKeyDown={e => {
                       if (e.key === 'Enter') { e.preventDefault(); addCustomWave() }
                     }}
-                    placeholder="e.g. Junior Elite"
+                    placeholder={tn.customWavePlaceholder}
                     className={inp + ' flex-1'}
                   />
                   <button
@@ -311,16 +307,15 @@ export default function NewRacePage() {
                     onClick={addCustomWave}
                     className="rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                   >
-                    Add
+                    {tn.add}
                   </button>
                 </div>
               </div>
 
-              {/* Wave order */}
               {form.wave_options.length > 0 && (
                 <div>
                   <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
-                    Wave order ({form.wave_options.length})
+                    {tn.waveOrder(form.wave_options.length)}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {form.wave_options.map((wave, i) => (
@@ -345,7 +340,7 @@ export default function NewRacePage() {
 
               {form.wave_options.length === 0 && (
                 <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                  Add at least one wave above.
+                  {tn.addAtLeastOneWave}
                 </p>
               )}
             </div>
@@ -354,19 +349,19 @@ export default function NewRacePage() {
 
         {/* ── Section 4: Shirt sizes ── */}
         <Card
-          title="Shirt sizes"
-          desc="Collect shirt size preference at registration"
+          title={tn.shirtSizes}
+          desc={tn.shirtSizesDesc}
           toggle={
             <Toggle
               checked={form.has_shirt_sizes}
               onChange={v => set('has_shirt_sizes', v)}
-              label={form.has_shirt_sizes ? 'Enabled' : 'Disabled'}
+              label={form.has_shirt_sizes ? tn.enabled : tn.disabled}
             />
           }
         >
           {form.has_shirt_sizes && (
             <div className="space-y-3">
-              <p className="text-sm text-gray-500">Select the sizes you&apos;ll offer.</p>
+              <p className="text-sm text-gray-500">{tn.selectSizesYouOffer}</p>
               <div className="flex flex-wrap gap-2">
                 {SHIRT_SIZES.map(size => (
                   <button
@@ -384,7 +379,7 @@ export default function NewRacePage() {
                 ))}
               </div>
               {form.shirt_sizes.length === 0 && (
-                <p className="text-xs text-amber-600">Select at least one size.</p>
+                <p className="text-xs text-amber-600">{tn.selectAtLeastOneSize}</p>
               )}
             </div>
           )}
@@ -405,7 +400,7 @@ export default function NewRacePage() {
             href="/dashboard/organizer/races"
             className="text-sm font-medium text-gray-500 hover:text-gray-700"
           >
-            Cancel
+            {t.common.cancel}
           </Link>
           <div className="flex items-center gap-3">
             <button
@@ -414,7 +409,7 @@ export default function NewRacePage() {
               onClick={() => submit('draft')}
               className="rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
-              Save as draft
+              {tn.saveAsDraft}
             </button>
             <button
               type="button"
@@ -423,10 +418,10 @@ export default function NewRacePage() {
               className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors"
             >
               {loading ? (
-                'Saving…'
+                t.common.saving
               ) : (
                 <>
-                  Publish race
+                  {tn.publishRace}
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>

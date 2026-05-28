@@ -2,6 +2,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { NavItem } from './_components/NavItem'
+import { getLocale } from '@/lib/i18n/server'
+import { getT } from '@/lib/i18n'
+import { LanguageToggleDark } from '@/components/LanguageToggle'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -15,6 +18,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .maybeSingle()
 
   const isOrganizer = !!organizer
+  const locale = await getLocale()
+  const t = getT(locale)
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -23,7 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Logo */}
         <div className="flex h-16 items-center border-b border-gray-100 px-5">
           <Link href="/" className="text-lg font-bold text-indigo-600 tracking-tight">
-            BibHub
+            {t.common.bibhub}
           </Link>
         </div>
 
@@ -51,13 +56,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 exact
                 icon={<DashboardIcon />}
               >
-                Dashboard
+                {t.sidebar.dashboard}
               </NavItem>
               <NavItem
                 href="/dashboard/organizer/races"
                 icon={<RacesIcon />}
               >
-                Races
+                {t.sidebar.races}
               </NavItem>
             </>
           ) : (
@@ -67,32 +72,35 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 exact
                 icon={<DashboardIcon />}
               >
-                Dashboard
+                {t.sidebar.dashboard}
               </NavItem>
               <NavItem
                 href="/dashboard/athlete/registrations"
                 icon={<RacesIcon />}
               >
-                My Registrations
+                {t.sidebar.myRegistrations}
               </NavItem>
               <NavItem
                 href="/dashboard/athlete/profile"
                 icon={<ProfileIcon />}
               >
-                Profile
+                {t.sidebar.profile}
               </NavItem>
             </>
           )}
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-gray-100 px-3 py-3">
+        <div className="border-t border-gray-100 px-3 py-3 space-y-2">
+          <div className="flex justify-center">
+            <LanguageToggleDark />
+          </div>
           <Link
             href="/auth/signout"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
           >
             <SignOutIcon />
-            Sign out
+            {t.sidebar.signOut}
           </Link>
         </div>
       </aside>

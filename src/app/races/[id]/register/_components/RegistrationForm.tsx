@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useLocale } from '@/lib/i18n/context'
 
-const SPORT_META: Record<string, { emoji: string; label: string }> = {
-  running:  { emoji: '🏃', label: 'Running' },
-  cycling:  { emoji: '🚴', label: 'Cycling' },
-  swimming: { emoji: '🏊', label: 'Swimming' },
+const SPORT_EMOJI: Record<string, string> = {
+  running: '🏃',
+  cycling: '🚴',
+  swimming: '🏊',
 }
 
 interface Props {
@@ -42,15 +43,32 @@ export default function RegistrationForm({
   athletePhone,
 }: Props) {
   const router = useRouter()
+  const { locale, t } = useLocale()
+  const tr = t.registration
+
   const [wave, setWave] = useState('')
   const [shirtSize, setShirtSize] = useState('')
   const [finishTime, setFinishTime] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const meta = SPORT_META[raceSportType] ?? { emoji: '🏁', label: raceSportType }
+  const emoji = SPORT_EMOJI[raceSportType] ?? '🏁'
+  const sportLabel = (() => {
+    if (locale === 'es') {
+      return { running: 'Running', cycling: 'Ciclismo', swimming: 'Natación' }[raceSportType] ?? raceSportType
+    }
+    return { running: 'Running', cycling: 'Cycling', swimming: 'Swimming' }[raceSportType] ?? raceSportType
+  })()
+
   const raceDateTime = new Date(raceDate)
   const isFree = racePrice === 0
+
+  const dateFmt = raceDateTime.toLocaleDateString(locale === 'es' ? 'es-CR' : 'en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+  })
+  const dateShort = raceDateTime.toLocaleDateString(locale === 'es' ? 'es-CR' : 'en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -80,7 +98,6 @@ export default function RegistrationForm({
       return
     }
 
-    // Paid race → Stripe Checkout
     const res = await fetch('/api/stripe/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -107,21 +124,19 @@ export default function RegistrationForm({
       {/* Header */}
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-bold text-indigo-600">BibHub</Link>
+          <Link href="/" className="text-lg font-bold text-indigo-600">{t.common.bibhub}</Link>
           <Link href={`/races/${raceId}`} className="text-sm text-gray-500 hover:text-gray-900">
-            ← Back to race
+            ← {t.races.allRaces.replace('← ', '')}
           </Link>
         </div>
       </header>
 
       <div className="mx-auto max-w-5xl px-6 py-10">
         <div className="mb-6">
-          <span className="text-sm text-gray-400">{meta.emoji} {meta.label}</span>
+          <span className="text-sm text-gray-400">{emoji} {sportLabel}</span>
           <h1 className="mt-1 text-2xl font-bold text-gray-900">{raceName}</h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            {raceDateTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-            {' · '}
-            {raceLocation}
+            {dateFmt} · {raceLocation}
           </p>
         </div>
 
@@ -134,22 +149,22 @@ export default function RegistrationForm({
               {/* Athlete info (read-only) */}
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">Your info</h2>
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">{tr.yourInfo}</h2>
                   <Link href="/dashboard/athlete/profile" className="text-xs text-indigo-600 hover:underline">
-                    Edit profile
+                    {locale === 'es' ? 'Editar perfil' : 'Edit profile'}
                   </Link>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <ReadOnlyField label="Name" value={athleteName} />
-                  <ReadOnlyField label="Email" value={athleteEmail} />
-                  {athletePhone && <ReadOnlyField label="Phone" value={athletePhone} />}
+                  <ReadOnlyField label={t.common.name} value={athleteName} />
+                  <ReadOnlyField label={t.common.email} value={athleteEmail} />
+                  {athletePhone && <ReadOnlyField label={t.athleteProfile.phone} value={athletePhone} />}
                 </div>
               </div>
 
               {/* Wave selection */}
               {hasWaves && waveOptions.length > 0 && (
                 <div className="rounded-2xl border border-gray-200 bg-white p-6">
-                  <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">Start wave</h2>
+                  <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">{tr.wave}</h2>
                   <div className="flex flex-wrap gap-2">
                     {waveOptions.map((w, i) => (
                       <button
@@ -175,7 +190,7 @@ export default function RegistrationForm({
               {/* Shirt size */}
               {shirtSizes.length > 0 && (
                 <div className="rounded-2xl border border-gray-200 bg-white p-6">
-                  <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">Shirt size</h2>
+                  <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">{tr.shirtSize}</h2>
                   <div className="flex flex-wrap gap-2">
                     {shirtSizes.map(size => (
                       <button
@@ -198,14 +213,14 @@ export default function RegistrationForm({
               {/* Expected finish time */}
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">
-                  Expected finish time
-                  <span className="ml-2 text-xs font-normal normal-case text-gray-400">optional</span>
+                  {tr.expectedFinishTime}
+                  <span className="ml-2 text-xs font-normal normal-case text-gray-400">{t.common.optional}</span>
                 </h2>
                 <input
                   type="text"
                   value={finishTime}
                   onChange={e => setFinishTime(e.target.value)}
-                  placeholder="e.g. 2:30:00"
+                  placeholder={tr.finishTimePlaceholder}
                   pattern="^\d+:[0-5]\d:[0-5]\d$"
                   title="Format: H:MM:SS (e.g. 2:30:00)"
                   className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:max-w-xs"
@@ -217,24 +232,21 @@ export default function RegistrationForm({
             {/* ── Right: order summary ── */}
             <div className="lg:col-span-1">
               <div className="sticky top-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">Order summary</h2>
+                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">{tr.orderSummary}</h2>
 
                 <div className="space-y-3 text-sm">
-                  <SummaryRow label={raceName} value={isFree ? 'Free' : `$${racePrice.toFixed(2)}`} bold />
-                  <SummaryRow label="Distance" value={`${raceDistance} km`} />
-                  <SummaryRow
-                    label="Date"
-                    value={raceDateTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  />
-                  {wave && <SummaryRow label="Wave" value={wave} />}
-                  {shirtSize && <SummaryRow label="Shirt" value={shirtSize} />}
+                  <SummaryRow label={raceName} value={isFree ? t.common.free : `$${racePrice.toFixed(2)}`} bold />
+                  <SummaryRow label={`${raceDistance} km`} value="" />
+                  <SummaryRow label={dateShort} value="" />
+                  {wave && <SummaryRow label={tr.wave} value={wave} />}
+                  {shirtSize && <SummaryRow label={tr.shirtSize} value={shirtSize} />}
                 </div>
 
                 <div className="my-4 border-t border-gray-100" />
 
                 <div className="flex items-center justify-between text-sm font-bold text-gray-900">
-                  <span>Total</span>
-                  <span>{isFree ? 'Free' : `$${racePrice.toFixed(2)}`}</span>
+                  <span>{tr.total}</span>
+                  <span>{isFree ? t.common.free : `$${racePrice.toFixed(2)}`}</span>
                 </div>
 
                 {error && (
@@ -249,16 +261,16 @@ export default function RegistrationForm({
                   className="mt-5 w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow hover:bg-indigo-700 transition-colors disabled:opacity-50"
                 >
                   {loading
-                    ? 'Please wait…'
+                    ? tr.processing
                     : isFree
-                      ? 'Complete registration'
+                      ? tr.completeRegistration
                       : `Pay $${racePrice.toFixed(2)}`}
                 </button>
 
                 <p className="mt-3 text-center text-xs text-gray-400">
                   {isFree
-                    ? 'No payment required'
-                    : 'Secure payment via Stripe'}
+                    ? (locale === 'es' ? 'Sin pago requerido' : 'No payment required')
+                    : (locale === 'es' ? 'Pago seguro vía Stripe' : 'Secure payment via Stripe')}
                 </p>
               </div>
             </div>
@@ -280,10 +292,11 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
 }
 
 function SummaryRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+  if (!label) return null
   return (
     <div className={`flex items-start justify-between gap-2 ${bold ? 'font-medium text-gray-900' : 'text-gray-500'}`}>
       <span className="min-w-0 truncate">{label}</span>
-      <span className="shrink-0">{value}</span>
+      {value && <span className="shrink-0">{value}</span>}
     </div>
   )
 }

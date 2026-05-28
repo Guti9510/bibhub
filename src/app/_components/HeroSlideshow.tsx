@@ -2,23 +2,26 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useLocale } from '@/lib/i18n/context'
+import LanguageToggle from '@/components/LanguageToggle'
 
 const slides = [
   {
     url: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=1920&q=80',
-    sport: 'Running',
+    sport: { en: 'Running', es: 'Running' },
   },
   {
     url: 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=1920&q=80',
-    sport: 'Cycling',
+    sport: { en: 'Cycling', es: 'Ciclismo' },
   },
   {
     url: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=1920&q=80',
-    sport: 'Swimming',
+    sport: { en: 'Swimming', es: 'Natación' },
   },
 ]
 
 export default function HeroSlideshow() {
+  const { locale, t } = useLocale()
   const [current, setCurrent] = useState(0)
   const [next, setNext] = useState<number | null>(null)
   const [transitioning, setTransitioning] = useState(false)
@@ -64,22 +67,26 @@ export default function HeroSlideshow() {
       {/* Dark overlay for text readability */}
       <div className="absolute inset-0 bg-black/55" style={{ zIndex: 2 }} />
 
+      {/* Language toggle — top right of hero */}
+      <div className="absolute top-4 right-6" style={{ zIndex: 4 }}>
+        <LanguageToggle />
+      </div>
+
       {/* Sport label */}
       <div className="relative mb-4" style={{ zIndex: 3 }}>
         <span className="inline-block rounded-full border border-white/30 bg-white/10 px-4 py-1 text-sm font-medium text-white/80 backdrop-blur-sm">
-          {slides[current].sport}
+          {slides[current].sport[locale]}
         </span>
       </div>
 
       {/* Hero text */}
       <div className="relative max-w-3xl" style={{ zIndex: 3 }}>
         <h1 className="text-5xl font-bold tracking-tight text-white drop-shadow-lg sm:text-6xl">
-          Race registration,{' '}
-          <span className="text-indigo-300">simplified.</span>
+          {t.home.heroTitle}{' '}
+          <span className="text-indigo-300">{t.home.heroTitleAccent}</span>
         </h1>
         <p className="mt-6 max-w-xl mx-auto text-lg text-white/80">
-          BibHub connects race organizers with athletes. Publish events, manage waves,
-          collect payments, and track registrations — all in one place.
+          {t.home.heroSubtitle}
         </p>
 
         <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -87,13 +94,13 @@ export default function HeroSlideshow() {
             href="/auth/signup"
             className="rounded-xl bg-indigo-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg hover:bg-indigo-500 transition-colors"
           >
-            I&apos;m an organizer
+            {t.home.imAnOrganizer}
           </Link>
           <Link
             href="/auth/athlete/signup"
             className="rounded-xl border border-white/40 bg-white/10 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/20 transition-colors"
           >
-            I&apos;m an athlete
+            {t.home.imAnAthlete}
           </Link>
         </div>
       </div>

@@ -3,11 +3,14 @@ import Link from 'next/link'
 import { getStripe } from '@/lib/stripe'
 import { getResend, registrationConfirmationEmail } from '@/lib/resend'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getLocale } from '@/lib/i18n/server'
+import { getT } from '@/lib/i18n'
+import type { Translations } from '@/lib/i18n/locales/en'
 
-const SPORT_META: Record<string, { emoji: string; label: string }> = {
-  running:  { emoji: '🏃', label: 'Running' },
-  cycling:  { emoji: '🚴', label: 'Cycling' },
-  swimming: { emoji: '🏊', label: 'Swimming' },
+const SPORT_EMOJI: Record<string, string> = {
+  running: '🏃',
+  cycling: '🚴',
+  swimming: '🏊',
 }
 
 type Params = Promise<{ id: string }>
@@ -23,6 +26,8 @@ export default async function RegistrationSuccessPage({
   const { id: raceId } = await params
   const { session_id, rid } = await searchParams
   const supabase = createAdminClient()
+  const locale = await getLocale()
+  const t = getT(locale)
 
   // ── Paid race: verify Stripe session and upsert registration ──────────────
   if (session_id) {
@@ -45,7 +50,6 @@ export default async function RegistrationSuccessPage({
         ? session.payment_intent
         : (session.payment_intent as { id: string } | null)?.id ?? null
 
-    // Upsert — webhook may fire before or after this page loads
     const { data: reg } = await supabase
       .from('registrations')
       .upsert(
@@ -65,7 +69,6 @@ export default async function RegistrationSuccessPage({
 
     if (!reg) notFound()
 
-    // Load race and athlete for the confirmation view
     const [{ data: race }, { data: athlete }] = await Promise.all([
       supabase.from('races').select('name, date, location, distance, sport_type, price').eq('id', race_id).single(),
       supabase.from('athletes').select('first_name, last_name, email').eq('id', athlete_id).single(),
@@ -73,7 +76,6 @@ export default async function RegistrationSuccessPage({
 
     if (!race || !athlete) notFound()
 
-    // Send confirmation email (only once — check registered_at recency to avoid double-send on page refresh)
     const registeredJustNow = reg.registered_at
       ? Date.now() - new Date(reg.registered_at).getTime() < 30_000
       : false
@@ -87,7 +89,7 @@ export default async function RegistrationSuccessPage({
             raceDate: new Date(race.date),
             raceLocation: race.location,
             raceDistance: Number(race.distance),
-            sportEmoji: SPORT_META[race.sport_type]?.emoji ?? '🏁',
+            sportEmoji: SPORT_EMOJI[race.sport_type] ?? '🏁',
             wave: reg.wave,
             shirtSize: reg.shirt_size,
             expectedFinishTime: reg.expected_finish_time,
@@ -101,11 +103,13 @@ export default async function RegistrationSuccessPage({
 
     return (
       <ConfirmationView
+        t={t}
+        locale={locale}
         raceName={race.name}
         raceDate={race.date}
         raceLocation={race.location}
         raceDistance={Number(race.distance)}
-        sportEmoji={SPORT_META[race.sport_type]?.emoji ?? '🏁'}
+        sportEmoji={SPORT_EMOJI[race.sport_type] ?? '🏁'}
         athleteName={`${athlete.first_name} ${athlete.last_name}`}
         wave={reg.wave}
         shirtSize={reg.shirt_size}
@@ -137,11 +141,13 @@ export default async function RegistrationSuccessPage({
 
     return (
       <ConfirmationView
+        t={t}
+        locale={locale}
         raceName={race.name}
         raceDate={race.date}
         raceLocation={race.location}
         raceDistance={Number(race.distance)}
-        sportEmoji={SPORT_META[race.sport_type]?.emoji ?? '🏁'}
+        sportEmoji={SPORT_EMOJI[race.sport_type] ?? '🏁'}
         athleteName={`${athlete.first_name} ${athlete.last_name}`}
         wave={reg.wave}
         shirtSize={reg.shirt_size}
@@ -157,6 +163,8 @@ export default async function RegistrationSuccessPage({
 // ─── Confirmation UI ────────────────────────────────────────────────────────
 
 function ConfirmationView({
+  t,
+  locale,
   raceName,
   raceDate,
   raceLocation,
@@ -168,6 +176,8 @@ function ConfirmationView({
   expectedFinishTime,
   price,
 }: {
+  t: Translations
+  locale: string
   raceName: string
   raceDate: string
   raceLocation: string
@@ -179,7 +189,14 @@ function ConfirmationView({
   expectedFinishTime: string | null
   price: number
 }) {
+  const tr = t.registration
   const dateObj = new Date(raceDate)
+  const loc = locale === 'es' ? 'es-CR' : 'en-US'
+
+  const dateLong = dateObj.toLocaleDateString(loc, {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+  })
+  const timeStr = dateObj.toLocaleTimeString(loc, { hour: 'numeric', minute: '2-digit' })
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-6 py-16">
@@ -194,28 +211,30 @@ function ConfirmationView({
         </div>
 
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">You're registered!</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            A confirmation email is on its way to you, {athleteName.split(' ')[0]}.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">{tr.registrationSuccess}</h1>
+          <p className="mt-1 text-sm text-gray-500">{tr.successSubtitle}</p>
         </div>
 
         {/* Race details card */}
         <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-6">
           <div className="mb-4 rounded-xl bg-gray-50 px-4 py-3">
-            <p className="text-xs font-medium text-gray-400">Race</p>
+            <p className="text-xs font-medium text-gray-400">{tr.raceName}</p>
             <p className="mt-0.5 text-base font-bold text-gray-900">{sportEmoji} {raceName}</p>
           </div>
 
           <dl className="space-y-3">
-            <ConfirmRow label="Date" value={dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} />
-            <ConfirmRow label="Time" value={dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} />
-            <ConfirmRow label="Location" value={raceLocation} />
-            <ConfirmRow label="Distance" value={`${raceDistance} km`} />
-            {wave && <ConfirmRow label="Wave" value={wave} />}
-            {shirtSize && <ConfirmRow label="Shirt size" value={shirtSize} />}
-            {expectedFinishTime && <ConfirmRow label="Expected finish" value={expectedFinishTime} />}
-            <ConfirmRow label="Entry fee" value={price === 0 ? 'Free' : `$${price.toFixed(2)} paid`} highlight />
+            <ConfirmRow label={t.races.date} value={dateLong} />
+            <ConfirmRow label={t.races.startTime} value={timeStr} />
+            <ConfirmRow label={t.races.location} value={raceLocation} />
+            <ConfirmRow label={t.races.distance} value={`${raceDistance} km`} />
+            {wave && <ConfirmRow label={tr.waveName} value={wave} />}
+            {shirtSize && <ConfirmRow label={tr.shirtSizeName} value={shirtSize} />}
+            {expectedFinishTime && <ConfirmRow label={tr.finishTime} value={expectedFinishTime} />}
+            <ConfirmRow
+              label={tr.paymentStatus}
+              value={price === 0 ? t.common.free : `$${price.toFixed(2)} ${tr.paid.toLowerCase()}`}
+              highlight
+            />
           </dl>
         </div>
 
@@ -225,13 +244,13 @@ function ConfirmationView({
             href="/dashboard/athlete"
             className="w-full rounded-xl bg-indigo-600 py-3 text-center text-sm font-bold text-white shadow hover:bg-indigo-700 transition-colors"
           >
-            View my registrations
+            {tr.goToDashboard}
           </Link>
           <Link
             href="/races"
             className="w-full rounded-xl border border-gray-200 bg-white py-3 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Browse more races
+            {tr.viewAllRaces}
           </Link>
         </div>
       </div>
