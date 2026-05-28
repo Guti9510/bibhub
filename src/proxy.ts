@@ -2,11 +2,16 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
+  // If env vars aren't set, skip auth checks entirely
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -23,20 +28,25 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const { pathname } = request.nextUrl
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const { pathname } = request.nextUrl
 
-  // Bounce authenticated users away from auth pages
-  const authPaths = ['/auth/login', '/auth/signup', '/auth/athlete/signup']
-  if (user && authPaths.includes(pathname)) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
+    // Bounce authenticated users away from auth pages
+    const authPaths = ['/auth/login', '/auth/signup', '/auth/athlete/signup']
+    if (user && authPaths.includes(pathname)) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
 
-  // Require auth for all dashboard routes
-  if (!user && pathname.startsWith('/dashboard')) {
-    const loginUrl = new URL('/auth/login', request.url)
-    loginUrl.searchParams.set('next', pathname)
-    return NextResponse.redirect(loginUrl)
+    // Require auth for all dashboard routes
+    if (!user && pathname.startsWith('/dashboard')) {
+      const loginUrl = new URL('/auth/login', request.url)
+      loginUrl.searchParams.set('next', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+  } catch {
+    // Auth check failed — let the request through and let the page handle it
+    return NextResponse.next({ request })
   }
 
   return supabaseResponse
