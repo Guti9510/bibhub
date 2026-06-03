@@ -81,6 +81,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 {t.sidebar.myRegistrations}
               </NavItem>
               <NavItem
+                href="/bibs"
+                icon={<TransferIcon />}
+              >
+                {t.sidebar.bibMarketplace}
+              </NavItem>
+              <NavItem
                 href="/dashboard/athlete/profile"
                 icon={<ProfileIcon />}
               >
@@ -133,6 +139,14 @@ function ProfileIcon() {
   return (
     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  )
+}
+
+function TransferIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
     </svg>
   )
 }

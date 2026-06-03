@@ -11,7 +11,7 @@ const SPORT_EMOJIS: Record<string, string> = {
 }
 
 export async function POST(request: NextRequest) {
-  const { race_id, wave, shirt_size, expected_finish_time } = await request.json()
+  const { race_id, shirt_size, expected_finish_time } = await request.json()
 
   const cookieStore = await cookies()
   const supabase = createServerClient<Database>(
@@ -53,7 +53,6 @@ export async function POST(request: NextRequest) {
     .insert({
       race_id,
       athlete_id: athlete.id,
-      wave: wave || null,
       shirt_size: shirt_size || null,
       expected_finish_time: expected_finish_time || null,
       payment_status: 'paid',
@@ -79,7 +78,7 @@ export async function POST(request: NextRequest) {
         raceLocation: race.location,
         raceDistance: Number(race.distance),
         sportEmoji: SPORT_EMOJIS[race.sport_type] ?? '🏁',
-        wave: wave || null,
+        wave: null,
         shirtSize: shirt_size || null,
         expectedFinishTime: expected_finish_time || null,
         price: 0,

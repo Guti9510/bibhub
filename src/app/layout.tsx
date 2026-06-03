@@ -3,6 +3,7 @@ import { Geist } from 'next/font/google'
 import './globals.css'
 import { getLocale } from '@/lib/i18n/server'
 import { LocaleProvider } from '@/lib/i18n/context'
+import DevNav from '@/components/DevNav'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
 
@@ -18,6 +19,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-full bg-gray-50 font-sans antialiased">
         <LocaleProvider locale={locale}>
           {children}
+          <DevNav />
         </LocaleProvider>
       </body>
     </html>

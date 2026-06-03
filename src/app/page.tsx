@@ -1,11 +1,17 @@
 import Link from 'next/link'
 import HeroSlideshow from './_components/HeroSlideshow'
+import UpcomingRaces from './_components/UpcomingRaces'
+import PlatformStats from './_components/PlatformStats'
 import { getLocale } from '@/lib/i18n/server'
 import { getT } from '@/lib/i18n'
+import { createClient } from '@/lib/supabase/server'
+import LanguageToggle from '@/components/LanguageToggle'
 
 export default async function HomePage() {
   const locale = await getLocale()
   const t = getT(locale)
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -14,21 +20,42 @@ export default async function HomePage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <span className="text-xl font-bold text-white drop-shadow">{t.common.bibhub}</span>
           <div className="flex items-center gap-4">
-            <Link href="/auth/login" className="text-sm font-medium text-white/80 hover:text-white">
-              {t.common.signIn}
+            <Link href="/races" className="text-sm font-medium text-white/70 hover:text-white transition-colors">
+              {locale === 'es' ? 'Carreras' : 'Races'}
             </Link>
-            <Link
-              href="/auth/signup"
-              className="rounded-lg bg-white/15 border border-white/30 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white hover:bg-white/25 transition-colors"
-            >
-              {t.common.getStarted}
+            <Link href="/bibs" className="text-sm font-medium text-white/70 hover:text-white transition-colors">
+              🔁 {locale === 'es' ? 'Dorsales' : 'Bib Market'}
             </Link>
+            <LanguageToggle />
+            {user ? (
+              <Link
+                href="/dashboard/athlete"
+                className="rounded-lg bg-white/15 border border-white/30 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white hover:bg-white/25 transition-colors"
+              >
+                {t.sidebar.dashboard}
+              </Link>
+            ) : (
+              <>
+                <Link href="/auth/login" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+                  {t.common.signIn}
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="rounded-lg bg-white/15 border border-white/30 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white hover:bg-white/25 transition-colors"
+                >
+                  {t.common.getStarted}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
 
       {/* Hero with slideshow */}
       <HeroSlideshow />
+
+      {/* Upcoming races calendar */}
+      <UpcomingRaces />
 
       {/* Feature grid */}
       <section className="bg-white py-20">
@@ -47,6 +74,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Platform stats */}
+      <PlatformStats />
 
       <footer className="border-t border-gray-200 py-8 text-center text-sm text-gray-400">
         {t.common.copyright(new Date().getFullYear())}

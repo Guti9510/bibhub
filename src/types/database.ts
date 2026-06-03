@@ -48,6 +48,10 @@ export interface Athlete {
   beneficiary_name: string | null
   beneficiary_relationship: string | null
   laterality: Laterality | null
+  height_cm: number | null
+  weight_kg: number | null
+  team: string | null
+  sport_years: Record<string, number> | null
   created_at: string
 }
 
@@ -68,6 +72,50 @@ export interface Registration {
 export type Database = {
   public: {
     Tables: {
+      events: {
+        Row: {
+          id: string
+          organizer_id: string
+          name: string
+          date: string
+          location: string
+          sport_type: string
+          description: string | null
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organizer_id: string
+          name: string
+          date: string
+          location: string
+          sport_type?: string
+          description?: string | null
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organizer_id?: string
+          name?: string
+          date?: string
+          location?: string
+          sport_type?: string
+          description?: string | null
+          status?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'events_organizer_id_fkey'
+            columns: ['organizer_id']
+            isOneToOne: false
+            referencedRelation: 'organizers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       organizers: {
         Row: {
           id: string
@@ -99,6 +147,7 @@ export type Database = {
         Row: {
           id: string
           organizer_id: string
+          event_id: string | null
           name: string
           date: string
           location: string
@@ -115,6 +164,7 @@ export type Database = {
         Insert: {
           id?: string
           organizer_id: string
+          event_id?: string | null
           name: string
           date: string
           location: string
@@ -131,6 +181,7 @@ export type Database = {
         Update: {
           id?: string
           organizer_id?: string
+          event_id?: string | null
           name?: string
           date?: string
           location?: string
@@ -171,6 +222,10 @@ export type Database = {
           beneficiary_name: string | null
           beneficiary_relationship: string | null
           laterality: string | null
+          height_cm: number | null
+          weight_kg: number | null
+          team: string | null
+          sport_years: Record<string, number> | null
           created_at: string
         }
         Insert: {
@@ -189,6 +244,10 @@ export type Database = {
           beneficiary_name?: string | null
           beneficiary_relationship?: string | null
           laterality?: string | null
+          height_cm?: number | null
+          weight_kg?: number | null
+          team?: string | null
+          sport_years?: Record<string, number> | null
           created_at?: string
         }
         Update: {
@@ -207,6 +266,10 @@ export type Database = {
           beneficiary_name?: string | null
           beneficiary_relationship?: string | null
           laterality?: string | null
+          height_cm?: number | null
+          weight_kg?: number | null
+          team?: string | null
+          sport_years?: Record<string, number> | null
           created_at?: string
         }
         Relationships: []
@@ -256,6 +319,77 @@ export type Database = {
           {
             foreignKeyName: 'registrations_athlete_id_fkey'
             columns: ['athlete_id']
+            isOneToOne: false
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      bib_transfers: {
+        Row: {
+          id: string
+          registration_id: string
+          race_id: string
+          seller_id: string
+          buyer_id: string | null
+          transfer_type: string
+          asking_price: number | null
+          message: string | null
+          status: string
+          created_at: string
+          claimed_at: string | null
+        }
+        Insert: {
+          id?: string
+          registration_id: string
+          race_id: string
+          seller_id: string
+          buyer_id?: string | null
+          transfer_type?: string
+          asking_price?: number | null
+          message?: string | null
+          status?: string
+          created_at?: string
+          claimed_at?: string | null
+        }
+        Update: {
+          id?: string
+          registration_id?: string
+          race_id?: string
+          seller_id?: string
+          buyer_id?: string | null
+          transfer_type?: string
+          asking_price?: number | null
+          message?: string | null
+          status?: string
+          created_at?: string
+          claimed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'bib_transfers_registration_id_fkey'
+            columns: ['registration_id']
+            isOneToOne: false
+            referencedRelation: 'registrations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'bib_transfers_race_id_fkey'
+            columns: ['race_id']
+            isOneToOne: false
+            referencedRelation: 'races'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'bib_transfers_seller_id_fkey'
+            columns: ['seller_id']
+            isOneToOne: false
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'bib_transfers_buyer_id_fkey'
+            columns: ['buyer_id']
             isOneToOne: false
             referencedRelation: 'athletes'
             referencedColumns: ['id']

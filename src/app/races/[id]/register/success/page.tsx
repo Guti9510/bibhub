@@ -111,7 +111,6 @@ export default async function RegistrationSuccessPage({
         raceDistance={Number(race.distance)}
         sportEmoji={SPORT_EMOJI[race.sport_type] ?? '🏁'}
         athleteName={`${athlete.first_name} ${athlete.last_name}`}
-        wave={reg.wave}
         shirtSize={reg.shirt_size}
         expectedFinishTime={reg.expected_finish_time}
         price={Number(race.price)}
@@ -149,7 +148,6 @@ export default async function RegistrationSuccessPage({
         raceDistance={Number(race.distance)}
         sportEmoji={SPORT_EMOJI[race.sport_type] ?? '🏁'}
         athleteName={`${athlete.first_name} ${athlete.last_name}`}
-        wave={reg.wave}
         shirtSize={reg.shirt_size}
         expectedFinishTime={reg.expected_finish_time}
         price={Number(race.price)}
@@ -171,7 +169,6 @@ function ConfirmationView({
   raceDistance,
   sportEmoji,
   athleteName,
-  wave,
   shirtSize,
   expectedFinishTime,
   price,
@@ -184,7 +181,6 @@ function ConfirmationView({
   raceDistance: number
   sportEmoji: string
   athleteName: string
-  wave: string | null
   shirtSize: string | null
   expectedFinishTime: string | null
   price: number
@@ -227,7 +223,6 @@ function ConfirmationView({
             <ConfirmRow label={t.races.startTime} value={timeStr} />
             <ConfirmRow label={t.races.location} value={raceLocation} />
             <ConfirmRow label={t.races.distance} value={`${raceDistance} km`} />
-            {wave && <ConfirmRow label={tr.waveName} value={wave} />}
             {shirtSize && <ConfirmRow label={tr.shirtSizeName} value={shirtSize} />}
             {expectedFinishTime && <ConfirmRow label={tr.finishTime} value={expectedFinishTime} />}
             <ConfirmRow

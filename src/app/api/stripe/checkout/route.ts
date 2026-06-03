@@ -5,7 +5,7 @@ import { getStripe } from '@/lib/stripe'
 import type { Database } from '@/types/database'
 
 export async function POST(request: NextRequest) {
-  const { race_id, wave, shirt_size, expected_finish_time } = await request.json()
+  const { race_id, shirt_size, expected_finish_time } = await request.json()
 
   const cookieStore = await cookies()
   const supabase = createServerClient<Database>(
@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
     metadata: {
       race_id: race.id,
       athlete_id: athlete.id,
-      wave: wave ?? '',
       shirt_size: shirt_size ?? '',
       expected_finish_time: expected_finish_time ?? '',
     },

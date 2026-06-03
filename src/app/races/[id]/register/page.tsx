@@ -55,8 +55,6 @@ export default async function RegisterPage({ params }: { params: Params }) {
       raceDistance={Number(race.distance)}
       raceSportType={race.sport_type}
       racePrice={Number(race.price)}
-      hasWaves={race.has_waves}
-      waveOptions={(race.wave_options as string[]) ?? []}
       shirtSizes={(race.shirt_sizes as string[]) ?? []}
       athleteName={`${athlete.first_name} ${athlete.last_name}`}
       athleteEmail={athlete.email}

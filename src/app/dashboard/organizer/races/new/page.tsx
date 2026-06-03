@@ -9,7 +9,6 @@ import { useLocale } from '@/lib/i18n/context'
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
-const WAVE_PRESETS = ['Elite', 'Wave A', 'Wave B', 'Wave C', 'Wave D', 'Open']
 
 type SportValue = 'running' | 'cycling' | 'swimming'
 
@@ -22,7 +21,6 @@ export default function NewRacePage() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [waveInput, setWaveInput] = useState('')
 
   const [form, setForm] = useState({
     name: '',
@@ -33,34 +31,12 @@ export default function NewRacePage() {
     distance: '',
     price: '',
     max_participants: '',
-    has_waves: false,
-    wave_options: [] as string[],
     has_shirt_sizes: false,
     shirt_sizes: [] as string[],
   })
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm(f => ({ ...f, [key]: value }))
-
-  // ── Waves ───────────────────────────────────────────────────────────────────
-
-  function toggleWavePreset(name: string) {
-    set('wave_options', form.wave_options.includes(name)
-      ? form.wave_options.filter(w => w !== name)
-      : [...form.wave_options, name])
-  }
-
-  function addCustomWave() {
-    const v = waveInput.trim()
-    if (v && !form.wave_options.includes(v)) {
-      set('wave_options', [...form.wave_options, v])
-      setWaveInput('')
-    }
-  }
-
-  function removeWave(name: string) {
-    set('wave_options', form.wave_options.filter(w => w !== name))
-  }
 
   // ── Sizes ───────────────────────────────────────────────────────────────────
 
@@ -104,8 +80,8 @@ export default function NewRacePage() {
       distance: parseFloat(form.distance),
       price: parseFloat(form.price) || 0,
       max_participants: parseInt(form.max_participants, 10),
-      has_waves: form.has_waves,
-      wave_options: form.has_waves ? form.wave_options : [],
+      has_waves: false,
+      wave_options: [],
       shirt_sizes: form.has_shirt_sizes ? form.shirt_sizes : [],
       status,
     })
@@ -136,6 +112,7 @@ export default function NewRacePage() {
       </div>
 
       <div className="mx-auto max-w-2xl space-y-5 px-8 py-8">
+
         {/* ── Section 1: Race details ── */}
         <Card title={tn.raceDetails} desc={tn.raceDetailsDesc}>
           <Field label={tn.raceName} required>
@@ -253,101 +230,7 @@ export default function NewRacePage() {
           </div>
         </Card>
 
-        {/* ── Section 3: Start waves ── */}
-        <Card
-          title={tn.startWaves}
-          desc={tn.startWavesDesc}
-          toggle={
-            <Toggle
-              checked={form.has_waves}
-              onChange={v => set('has_waves', v)}
-              label={form.has_waves ? tn.enabled : tn.disabled}
-            />
-          }
-        >
-          {form.has_waves && (
-            <div className="space-y-4">
-              <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{tn.quickAdd}</p>
-                <div className="flex flex-wrap gap-2">
-                  {WAVE_PRESETS.map(preset => {
-                    const active = form.wave_options.includes(preset)
-                    return (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => toggleWavePreset(preset)}
-                        className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
-                          active
-                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                            : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                        }`}
-                      >
-                        {active ? '✓ ' : '+ '}{preset}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{tn.customName}</p>
-                <div className="flex gap-2">
-                  <input
-                    value={waveInput}
-                    onChange={e => setWaveInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') { e.preventDefault(); addCustomWave() }
-                    }}
-                    placeholder={tn.customWavePlaceholder}
-                    className={inp + ' flex-1'}
-                  />
-                  <button
-                    type="button"
-                    onClick={addCustomWave}
-                    className="rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-                  >
-                    {tn.add}
-                  </button>
-                </div>
-              </div>
-
-              {form.wave_options.length > 0 && (
-                <div>
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
-                    {tn.waveOrder(form.wave_options.length)}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {form.wave_options.map((wave, i) => (
-                      <span
-                        key={wave}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 py-1 pl-3 pr-2 text-sm font-medium text-indigo-700"
-                      >
-                        <span className="text-xs font-normal text-indigo-400">{i + 1}.</span>
-                        {wave}
-                        <button
-                          type="button"
-                          onClick={() => removeWave(wave)}
-                          className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-indigo-300 hover:bg-indigo-200 hover:text-indigo-700 transition-colors"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {form.wave_options.length === 0 && (
-                <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                  {tn.addAtLeastOneWave}
-                </p>
-              )}
-            </div>
-          )}
-        </Card>
-
-        {/* ── Section 4: Shirt sizes ── */}
+        {/* ── Section 3: Shirt sizes ── */}
         <Card
           title={tn.shirtSizes}
           desc={tn.shirtSizesDesc}
@@ -494,8 +377,6 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
     </button>
   )
 }
-
-// ─── Shared input style ──────────────────────────────────────────────────────────
 
 const inp =
   'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500'

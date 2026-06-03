@@ -19,8 +19,6 @@ interface Props {
   raceDistance: number
   raceSportType: string
   racePrice: number
-  hasWaves: boolean
-  waveOptions: string[]
   shirtSizes: string[]
   athleteName: string
   athleteEmail: string
@@ -35,8 +33,6 @@ export default function RegistrationForm({
   raceDistance,
   raceSportType,
   racePrice,
-  hasWaves,
-  waveOptions,
   shirtSizes,
   athleteName,
   athleteEmail,
@@ -46,7 +42,6 @@ export default function RegistrationForm({
   const { locale, t } = useLocale()
   const tr = t.registration
 
-  const [wave, setWave] = useState('')
   const [shirtSize, setShirtSize] = useState('')
   const [finishTime, setFinishTime] = useState('')
   const [loading, setLoading] = useState(false)
@@ -81,7 +76,6 @@ export default function RegistrationForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           race_id: raceId,
-          wave: wave || null,
           shirt_size: shirtSize || null,
           expected_finish_time: finishTime || null,
         }),
@@ -103,7 +97,6 @@ export default function RegistrationForm({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         race_id: raceId,
-        wave: wave || null,
         shirt_size: shirtSize || null,
         expected_finish_time: finishTime || null,
       }),
@@ -161,32 +154,6 @@ export default function RegistrationForm({
                 </div>
               </div>
 
-              {/* Wave selection */}
-              {hasWaves && waveOptions.length > 0 && (
-                <div className="rounded-2xl border border-gray-200 bg-white p-6">
-                  <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">{tr.wave}</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {waveOptions.map((w, i) => (
-                      <button
-                        key={w}
-                        type="button"
-                        onClick={() => setWave(wave === w ? '' : w)}
-                        className={`inline-flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-medium transition-all ${
-                          wave === w
-                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                        }`}
-                      >
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600">
-                          {i + 1}
-                        </span>
-                        {w}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Shirt size */}
               {shirtSizes.length > 0 && (
                 <div className="rounded-2xl border border-gray-200 bg-white p-6">
@@ -238,7 +205,6 @@ export default function RegistrationForm({
                   <SummaryRow label={raceName} value={isFree ? t.common.free : `$${racePrice.toFixed(2)}`} bold />
                   <SummaryRow label={`${raceDistance} km`} value="" />
                   <SummaryRow label={dateShort} value="" />
-                  {wave && <SummaryRow label={tr.wave} value={wave} />}
                   {shirtSize && <SummaryRow label={tr.shirtSize} value={shirtSize} />}
                 </div>
 

@@ -39,6 +39,10 @@ export default function AthleteProfilePage() {
     emergency_contact_phone: '',
     beneficiary_name: '',
     beneficiary_relationship: '',
+    height_cm: '',
+    weight_kg: '',
+    team: '',
+    sport_years: {} as Record<string, string>,
   })
 
   useEffect(() => {
@@ -70,6 +74,13 @@ export default function AthleteProfilePage() {
           emergency_contact_phone: data.emergency_contact_phone ?? '',
           beneficiary_name: data.beneficiary_name ?? '',
           beneficiary_relationship: data.beneficiary_relationship ?? '',
+          height_cm: data.height_cm != null ? String(data.height_cm) : '',
+          weight_kg: data.weight_kg != null ? String(data.weight_kg) : '',
+          team: data.team ?? '',
+          sport_years: Object.fromEntries(
+            Object.entries((data.sport_years ?? {}) as Record<string, number>)
+              .map(([k, v]) => [k, v != null ? String(v) : ''])
+          ) as Record<string, string>,
         } : {}),
       }))
 
@@ -83,9 +94,15 @@ export default function AthleteProfilePage() {
   }
 
   function toggleSport(sport: SportType) {
-    set('sport_types', form.sport_types.includes(sport)
+    const isSelected = form.sport_types.includes(sport)
+    set('sport_types', isSelected
       ? form.sport_types.filter(s => s !== sport)
       : [...form.sport_types, sport])
+    if (isSelected) {
+      const updated = { ...form.sport_years }
+      delete updated[sport]
+      set('sport_years', updated)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -113,6 +130,14 @@ export default function AthleteProfilePage() {
       emergency_contact_phone: form.emergency_contact_phone || null,
       beneficiary_name: form.beneficiary_name || null,
       beneficiary_relationship: form.beneficiary_relationship || null,
+      height_cm: form.height_cm ? parseFloat(form.height_cm) : null,
+      weight_kg: form.weight_kg ? parseFloat(form.weight_kg) : null,
+      team: form.team || null,
+      sport_years: Object.fromEntries(
+        form.sport_types
+          .map(s => [s, form.sport_years[s] ? parseInt(form.sport_years[s], 10) : null])
+          .filter(([, v]) => v !== null)
+      ) as Record<string, number>,
     }
 
     const { error: upsertError } = await supabase
@@ -229,6 +254,55 @@ export default function AthleteProfilePage() {
           </div>
         </Card>
 
+        {/* Body metrics */}
+        <Card title={tp.bodyMetrics} desc={tp.bodyMetricsDesc}>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label={tp.heightCm} optional>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="100"
+                  max="250"
+                  step="0.1"
+                  placeholder={tp.heightPlaceholder}
+                  value={form.height_cm}
+                  onChange={e => set('height_cm', e.target.value)}
+                  className={inp}
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-gray-400">cm</span>
+              </div>
+            </Field>
+            <Field label={tp.weightKg} optional>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="30"
+                  max="300"
+                  step="0.1"
+                  placeholder={tp.weightPlaceholder}
+                  value={form.weight_kg}
+                  onChange={e => set('weight_kg', e.target.value)}
+                  className={inp}
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-gray-400">kg</span>
+              </div>
+            </Field>
+          </div>
+        </Card>
+
+        {/* Team */}
+        <Card title={tp.team}>
+          <Field label={tp.team} optional>
+            <input
+              type="text"
+              placeholder={tp.teamPlaceholder}
+              value={form.team}
+              onChange={e => set('team', e.target.value)}
+              className={inp}
+            />
+          </Field>
+        </Card>
+
         {/* Sports & laterality */}
         <Card title={tp.sportsLaterality}>
           <Field label={tp.iCompeteIn}>
@@ -249,6 +323,31 @@ export default function AthleteProfilePage() {
                 </button>
               ))}
             </div>
+            {form.sport_types.length > 0 && (
+              <div className="mt-3 space-y-2 rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">{tp.yearsPracticing}</p>
+                <div className="grid grid-cols-1 gap-2">
+                  {SPORTS.filter(s => form.sport_types.includes(s.value)).map(({ value, emoji, label }) => (
+                    <div key={value} className="flex items-center gap-3">
+                      <span className="w-28 text-sm text-gray-600">{emoji} {label}</span>
+                      <div className="relative flex-1">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          step="1"
+                          placeholder={tp.yearsPlaceholder}
+                          value={form.sport_years[value] ?? ''}
+                          onChange={e => set('sport_years', { ...form.sport_years, [value]: e.target.value })}
+                          className={inp + ' bg-white pr-10'}
+                        />
+                        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-gray-400">yrs</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </Field>
 
           <Field label={tp.dominantSide} optional>
@@ -360,10 +459,12 @@ export default function AthleteProfilePage() {
   )
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-6">
-      <h2 className="mb-5 text-sm font-semibold uppercase tracking-wide text-gray-400">{title}</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">{title}</h2>
+      {desc && <p className="mt-1 mb-5 text-xs text-gray-400">{desc}</p>}
+      {!desc && <div className="mb-5" />}
       <div className="space-y-4">{children}</div>
     </div>
   )

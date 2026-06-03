@@ -1,9 +1,11 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getLocale } from '@/lib/i18n/server'
 import { getT } from '@/lib/i18n'
 import { LanguageToggleDark } from '@/components/LanguageToggle'
+import ClaimBibButton from './_components/ClaimBibButton'
 
 const SPORT_COLORS: Record<string, string> = {
   running:  'bg-orange-50 text-orange-700 border-orange-200',
@@ -22,9 +24,11 @@ type Params = Promise<{ id: string }>
 export default async function RaceDetailPage({ params }: { params: Params }) {
   const { id } = await params
   const supabase = await createClient()
+  const admin = createAdminClient()
   const locale = await getLocale()
   const t = getT(locale)
   const tr = t.races
+  const tb = t.bibTransfer
 
   const { data: race } = await supabase
     .from('races')
@@ -39,15 +43,64 @@ export default async function RaceDetailPage({ params }: { params: Params }) {
   const emoji = SPORT_EMOJI[race.sport_type] ?? '🏃'
   const raceDate = new Date(race.date)
   const organizer = race.organizers as unknown as { name: string; email: string } | null
-  const waveOptions = race.wave_options as string[]
   const shirtSizes = race.shirt_sizes as string[]
   const isFree = Number(race.price) === 0
 
+  // ── Current user context ────────────────────────────────────────────────────
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let currentAthleteId: string | null = null
+  let isAlreadyRegistered = false
+
+  if (user) {
+    const { data: athlete } = await supabase
+      .from('athletes')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    currentAthleteId = athlete?.id ?? null
+
+    if (currentAthleteId) {
+      const { data: existing } = await supabase
+        .from('registrations')
+        .select('id')
+        .eq('race_id', id)
+        .eq('athlete_id', currentAthleteId)
+        .maybeSingle()
+      isAlreadyRegistered = !!existing
+    }
+  }
+
+  // ── Bib transfer listings ───────────────────────────────────────────────────
+  const { data: bibListings } = await admin
+    .from('bib_transfers')
+    .select('id, seller_id, transfer_type, asking_price, message, athletes!seller_id(first_name, last_name)')
+    .eq('race_id', id)
+    .eq('status', 'available')
+    .order('created_at', { ascending: false })
+
+  type BibListing = {
+    id: string
+    seller_id: string
+    transfer_type: string
+    asking_price: number | null
+    message: string | null
+    athletes: { first_name: string; last_name: string } | null
+  }
+  const listings = (bibListings ?? []) as unknown as BibListing[]
+
+  // ── Formatting ──────────────────────────────────────────────────────────────
   const sportLabel = (s: string) => {
     if (locale === 'es') {
       return { running: 'Running', cycling: 'Ciclismo', swimming: 'Natación' }[s] ?? s
     }
     return { running: 'Running', cycling: 'Cycling', swimming: 'Swimming' }[s] ?? s
+  }
+
+  const transferTypeLabel = (type: string) => {
+    const map: Record<string, string> = { sell: tb.sell, swap: tb.swap, gift: tb.gift }
+    return map[type] ?? type
   }
 
   const dateLong = raceDate.toLocaleDateString(locale === 'es' ? 'es-CR' : 'en-US', {
@@ -102,23 +155,6 @@ export default async function RaceDetailPage({ params }: { params: Params }) {
               </dl>
             </div>
 
-            {/* Waves */}
-            {race.has_waves && waveOptions.length > 0 && (
-              <div className="rounded-2xl border border-gray-200 bg-white p-6">
-                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">{tr.startWavesTitle}</h2>
-                <div className="flex flex-wrap gap-2">
-                  {waveOptions.map((wave, i) => (
-                    <span key={wave} className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600">
-                        {i + 1}
-                      </span>
-                      {wave}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Shirt sizes */}
             {shirtSizes.length > 0 && (
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
@@ -134,6 +170,63 @@ export default async function RaceDetailPage({ params }: { params: Params }) {
                 </div>
               </div>
             )}
+
+            {/* ── Bib marketplace ── */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-6">
+              <div className="mb-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">{tb.availableBibs}</h2>
+                <p className="mt-0.5 text-xs text-gray-400">{tb.availableBibsDesc}</p>
+              </div>
+
+              {listings.length === 0 ? (
+                <p className="text-sm text-gray-400">{tb.noBibsAvailable}</p>
+              ) : (
+                <div className="space-y-3">
+                  {listings.map(listing => {
+                    const seller = listing.athletes
+                    const sellerName = seller
+                      ? `${seller.first_name} ${seller.last_name}`
+                      : '—'
+                    const isOwnListing = currentAthleteId === listing.seller_id
+
+                    return (
+                      <div key={listing.id} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900">{sellerName}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-white border border-gray-200 px-2 py-0.5 font-medium text-gray-600">
+                                {transferTypeLabel(listing.transfer_type)}
+                              </span>
+                              {listing.asking_price ? (
+                                <span className="font-semibold text-gray-800">${Number(listing.asking_price).toFixed(2)}</span>
+                              ) : listing.transfer_type === 'gift' ? (
+                                <span className="font-semibold text-green-700">{t.common.free}</span>
+                              ) : (
+                                <span className="text-gray-400">{tb.negotiable}</span>
+                              )}
+                            </div>
+                            {listing.message && (
+                              <p className="mt-1.5 text-xs text-gray-500 italic">{listing.message}</p>
+                            )}
+                          </div>
+                          <div className="w-36 shrink-0">
+                            <ClaimBibButton
+                              transferId={listing.id}
+                              sellerName={sellerName}
+                              isLoggedIn={!!user}
+                              isAlreadyRegistered={isAlreadyRegistered}
+                              isOwnListing={isOwnListing}
+                              raceId={id}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ── Right: registration card ── */}
@@ -154,16 +247,18 @@ export default async function RaceDetailPage({ params }: { params: Params }) {
               )}
 
               <div className="space-y-2 text-sm">
-                {waveOptions.length > 0 && (
-                  <p className="flex items-center gap-2 text-gray-600">
-                    <span className="text-indigo-500">✓</span>
-                    {waveOptions.length} {waveOptions.length === 1 ? tr.startWave : tr.startWaves}
-                  </p>
-                )}
                 {shirtSizes.length > 0 && (
                   <p className="flex items-center gap-2 text-gray-600">
                     <span className="text-indigo-500">✓</span>
                     {tr.shirtSizeSelection}
+                  </p>
+                )}
+                {listings.length > 0 && (
+                  <p className="flex items-center gap-2 text-gray-600">
+                    <span className="text-indigo-500">✓</span>
+                    {listings.length} {listings.length === 1
+                      ? (locale === 'es' ? 'dorsal disponible' : 'bib available')
+                      : (locale === 'es' ? 'dorsales disponibles' : 'bibs available')}
                   </p>
                 )}
               </div>

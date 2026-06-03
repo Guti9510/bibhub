@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useLocale } from '@/lib/i18n/context'
-import LanguageToggle from '@/components/LanguageToggle'
 
 const slides = [
   {
@@ -66,11 +65,6 @@ export default function HeroSlideshow() {
 
       {/* Dark overlay for text readability */}
       <div className="absolute inset-0 bg-black/55" style={{ zIndex: 2 }} />
-
-      {/* Language toggle — top right of hero */}
-      <div className="absolute top-4 right-6" style={{ zIndex: 4 }}>
-        <LanguageToggle />
-      </div>
 
       {/* Sport label */}
       <div className="relative mb-4" style={{ zIndex: 3 }}>
