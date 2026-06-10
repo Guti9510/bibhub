@@ -2,6 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { getLocale } from '@/lib/i18n/server'
 import { getT } from '@/lib/i18n'
 
+// ── Demo offset ──────────────────────────────────────────────────────────────
+// Represents participants from Maratón San José 2026 (stored as demo data, not
+// in the registrations table). Remove once real results are imported.
+const DEMO_PARTICIPANT_OFFSET = 9_800
+
 function formatNum(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`
   if (n >= 1_000)     return `${(n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1)}K`
@@ -19,7 +24,7 @@ export default async function PlatformStats() {
     { count: athletesCount },
     { count: registrationsCount },
   ] = await Promise.all([
-    supabase.from('events').select('*', { count: 'exact', head: true }).eq('status', 'published'),
+    supabase.from('events').select('*', { count: 'exact', head: true }).in('status', ['published', 'closed']),
     supabase.from('athletes').select('*', { count: 'exact', head: true }),
     supabase.from('registrations').select('*', { count: 'exact', head: true }),
   ])
@@ -27,7 +32,7 @@ export default async function PlatformStats() {
   const stats = [
     { value: eventsCount ?? 0,        label: th.statsEvents,       icon: '🏁' },
     { value: athletesCount ?? 0,      label: th.statsAthletes,     icon: '🏃' },
-    { value: registrationsCount ?? 0, label: th.statsParticipants, icon: '🎽' },
+    { value: (registrationsCount ?? 0) + DEMO_PARTICIPANT_OFFSET, label: th.statsParticipants, icon: '🎽' },
   ]
 
   return (

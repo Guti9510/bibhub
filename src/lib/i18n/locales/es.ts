@@ -48,6 +48,9 @@ const es: Translations = {
     statsAthletes: 'Atletas',
     statsParticipants: 'Participantes',
     statsTagline: 'Creciendo cada día de carrera.',
+    spotlightBadge: 'Resultados',
+    spotlightCta: 'Ver estadísticas →',
+    spotlightDismiss: 'Quizás después',
     featuresTitle: 'Todo lo que necesitas para organizar una carrera',
     features: [
       { icon: '🏁', title: 'Multi-deporte', description: 'Eventos de running, ciclismo y natación en un solo panel.' },
@@ -331,6 +334,21 @@ const es: Translations = {
     noRacesYet: 'Sin carreras aún',
     createFirstRace: 'Crea tu primera carrera para empezar a recibir inscripciones.',
     createARace: 'Crear una carrera',
+  },
+
+  // ── Race stats page ─────────────────────────────────────────────────────────
+  raceStats: {
+    backToCalendar: '← Calendario',
+    finalResults: 'Resultados Finales',
+    totalFinishers: 'Finalizadores',
+    men: 'Hombres',
+    women: 'Mujeres',
+    byDistance: 'Resultados por distancia',
+    avgTime: 'Tiempo promedio',
+    ofTotal: 'del total',
+    overallSplit: 'División de género total',
+    resultsComingSoon: 'Resultados próximamente',
+    resultsComingSoonDesc: 'Los resultados se publicarán después del evento.',
   },
 
   // ── Bib transfer / marketplace ──────────────────────────────────────────────

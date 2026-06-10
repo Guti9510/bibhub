@@ -2,6 +2,7 @@ import Link from 'next/link'
 import HeroSlideshow from './_components/HeroSlideshow'
 import UpcomingRaces from './_components/UpcomingRaces'
 import PlatformStats from './_components/PlatformStats'
+import RaceSpotlight from './_components/RaceSpotlight'
 import { getLocale } from '@/lib/i18n/server'
 import { getT } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
@@ -15,6 +16,8 @@ export default async function HomePage() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Race results spotlight popup — auto-shows when a closed event has stats */}
+      <RaceSpotlight />
       {/* Nav — floats over the hero */}
       <header className="absolute inset-x-0 top-0 z-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">

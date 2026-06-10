@@ -46,6 +46,9 @@ const en = {
     statsAthletes: 'Athletes',
     statsParticipants: 'Participants',
     statsTagline: 'Growing every race day.',
+    spotlightBadge: 'Race Results',
+    spotlightCta: 'View full stats →',
+    spotlightDismiss: 'Maybe later',
     featuresTitle: 'Everything you need to run a race',
     features: [
       { icon: '🏁', title: 'Multi-sport support', description: 'Running, cycling, and swimming events in one dashboard.' },
@@ -329,6 +332,21 @@ const en = {
     noRacesYet: 'No races yet',
     createFirstRace: 'Create your first race to start collecting registrations.',
     createARace: 'Create a race',
+  },
+
+  // ── Race stats page ─────────────────────────────────────────────────────────
+  raceStats: {
+    backToCalendar: '← Calendar',
+    finalResults: 'Final Results',
+    totalFinishers: 'Finishers',
+    men: 'Men',
+    women: 'Women',
+    byDistance: 'Results by distance',
+    avgTime: 'Avg finish',
+    ofTotal: 'of total',
+    overallSplit: 'Overall gender split',
+    resultsComingSoon: 'Results coming soon',
+    resultsComingSoonDesc: 'Results will be published after the event.',
   },
 
   // ── Bib transfer / marketplace ──────────────────────────────────────────────
