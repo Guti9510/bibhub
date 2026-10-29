@@ -61,17 +61,27 @@ export default async function HomePage() {
       <UpcomingRaces />
 
       {/* Feature grid */}
-      <section className="bg-white py-20">
+      <section className="bg-slate-950 py-24">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="mb-12 text-center text-3xl font-bold text-gray-900">
-            {t.home.featuresTitle}
-          </h2>
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mb-14 text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-indigo-400">
+              {locale === 'es' ? 'Plataforma' : 'Platform'}
+            </p>
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+              {t.home.featuresTitle}
+            </h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {t.home.features.map((f) => (
-              <div key={f.title} className="rounded-xl border border-gray-200 p-6">
-                <div className="mb-3 text-2xl">{f.icon}</div>
-                <h3 className="font-semibold text-gray-900">{f.title}</h3>
-                <p className="mt-1 text-sm text-gray-500">{f.description}</p>
+              <div
+                key={f.title}
+                className="group rounded-2xl border border-white/8 bg-white/4 p-6 transition-all hover:border-white/15 hover:bg-white/7"
+              >
+                <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-xl">
+                  {f.icon}
+                </div>
+                <h3 className="font-semibold text-white">{f.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{f.description}</p>
               </div>
             ))}
           </div>
